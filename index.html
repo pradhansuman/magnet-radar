@@ -195,6 +195,8 @@
 
 <aside id="sidebar">
   <div class="side-title">Browse Torrents</div>
+  <div class="nav-sep">Instant Playback</div>
+  <button class="nav-item" data-sec="free"><span class="ic">🆓</span>Free Movies · Instant</button>
   <button class="nav-item" data-sec="trending"><span class="ic">📈</span>Trending Torrents</button>
   <button class="nav-item" data-sec="top100"><span class="ic">⭐</span>Top 100 Torrents</button>
   <div class="nav-sep">Video</div>
@@ -267,7 +269,7 @@
 </main>
 
 <footer>
-  <div>Sources: <a href="https://yts.mx/api" target="_blank" rel="noopener">YTS API</a> (movies) · <a href="https://eztvx.to/" target="_blank" rel="noopener">EZTV API</a> (TV) · <a href="https://torrents-csv.com" target="_blank" rel="noopener">Torrents-CSV</a> (categories &amp; search). Everything runs in your browser; nothing is proxied or logged. The WebTorrent engine loads on demand from jsDelivr.</div>
+  <div>Sources: <a href="https://archive.org/details/feature_films" target="_blank" rel="noopener">archive.org</a> (free movies, instant play) · <a href="https://yts.mx/api" target="_blank" rel="noopener">YTS API</a> (movies) · <a href="https://eztvx.to/" target="_blank" rel="noopener">EZTV API</a> (TV) · <a href="https://torrents-csv.com" target="_blank" rel="noopener">Torrents-CSV</a> (categories &amp; search). Everything runs in your browser; nothing is proxied or logged. The WebTorrent engine loads on demand from jsDelivr.</div>
   <div class="warn">⚠ Share only what's legal to share: public-domain and open-source releases, Creative-Commons media, and your own files. Respect the law where you live.</div>
 </footer>
 
@@ -340,6 +342,7 @@ function ytsDateToUnix(s) {
 /* ---------------- sections registry & state ---------------- */
 
 var SECTIONS = {
+  free:     { icon: "🆓", name: "Free Movies · Instant Play", sub: "archive.org · public domain · streams instantly, no peers needed", type: "ia" },
   trending: { icon: "📈", name: "Trending Torrents", sub: "latest across sources · most seeded right now", type: "computed" },
   top100:   { icon: "⭐", name: "Top 100 Torrents",   sub: "latest across sources · ranked by seeders", type: "computed" },
   movies:   { icon: "🎬", name: "Movie Library",      sub: "YTS · newest additions", type: "feed" },
@@ -355,6 +358,7 @@ var SECTIONS = {
 var state = {
   movies: { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   tv:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
+  ia:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   search: { q: "", rows: null, loading: false, error: null }
 };
 var csvState = {};   // q -> {rows, loading, error}
@@ -473,6 +477,43 @@ function loadSearch(q) {
     });
 }
 
+function loadIA(page) {
+  var st = state.ia;
+  st.loading = true; st.error = null;
+  if (currentSec === "free") renderCurrent();
+  var url = "https://archive.org/advancedsearch.php?q=" +
+    encodeURIComponent('collection:(feature_films) AND mediatype:(movies)') +
+    "&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=year&fl%5B%5D=downloads&rows=50&page=" + page +
+    "&sort%5B%5D=addeddate+desc&output=json";
+  fetchJSON(url, 15000)
+    .then(function (j) {
+      var docs = j && j.response && j.response.docs || [];
+      st.rows = docs.map(function (d) {
+        var year = d.year || "";
+        return {
+          title: (d.title || d.identifier) + (year ? " (" + year + ")" : ""),
+          iaId: d.identifier,
+          isIA: true,
+          downloads: Number(d.downloads) || 0,
+          sizeStr: null,
+          sizeB: 0,
+          torrentUrl: "https://archive.org/download/" + encodeURIComponent(d.identifier) + "/" + encodeURIComponent(d.identifier) + "_archive.torrent",
+          dateUnix: 0,
+          magnet: null
+        };
+      });
+      st.total = j && j.response && j.response.numFound || null;
+      st.page = page;
+      st.pages = st.total ? Math.ceil(st.total / 50) : null;
+      st.loading = false;
+      if (currentSec === "free") renderCurrent();
+    })
+    .catch(function (e) {
+      st.loading = false; st.error = e.message || String(e);
+      if (currentSec === "free") renderCurrent();
+    });
+}
+
 function mapCsvRows(j) {
   var ts = j && j.torrents || [];
   return ts.map(function (t) {
@@ -523,6 +564,7 @@ function feedsLoading() { return state.movies.loading || state.tv.loading; }
 function secState(sec) {
   var def = SECTIONS[sec];
   if (def.type === "feed") return state[sec];
+  if (def.type === "ia") return state.ia;
   if (def.type === "search") return state.search;
   if (def.type === "csv") return csvState[def.q] || { rows: null, loading: false, error: null };
   return null;
@@ -530,6 +572,7 @@ function secState(sec) {
 function visibleRows(sec) {
   var def = SECTIONS[sec];
   if (def.type === "computed") return computedRows(sec);
+  if (def.type === "ia") return (state.ia.rows || []);
   if (def.type === "movies") {
     var q = document.getElementById("qualitySelM").value;
     var ms = Number(document.getElementById("minSeedsM").value) || 0;
@@ -590,15 +633,18 @@ function renderCurrent() {
   document.querySelectorAll(".sec-toolbar").forEach(function (tb) {
     var f = tb.getAttribute("data-for");
     var match = (def.type === "feed" && f === sec) ||
+                (def.type === "ia" && f === "plain") ||
                 (def.type === "search" && f === "search") ||
                 (def.type === "csv" && f === "plain") ||
                 (def.type === "computed" && f === "plain");
     tb.style.display = match ? "flex" : "none";
   });
-  if (def.type === "csv" || def.type === "computed") {
+  if (def.type === "csv" || def.type === "computed" || def.type === "ia") {
     document.getElementById("plainNote").textContent =
       def.type === "computed"
         ? "Computed live from the latest movie + TV feeds."
+        : def.type === "ia"
+        ? "Public-domain films from archive.org — ▶ Play streams instantly over HTTP, no torrent peers needed."
         : "Keyword feed: “" + def.q + "” · results ranked by seeders.";
   }
 
@@ -649,6 +695,7 @@ function renderCurrent() {
 
   if (sec === "movies") meta.textContent = rows.length + " torrent files · page " + state.movies.page + (state.movies.total ? " of ~" + state.movies.total + " movies" : "");
   else if (sec === "tv") meta.textContent = rows.length + " releases · page " + state.tv.page + (state.tv.total ? " · " + Number(state.tv.total).toLocaleString() + " indexed" : "");
+  else if (sec === "free") meta.textContent = rows.length + " films · page " + state.ia.page + (state.ia.total ? " of ~" + Number(state.ia.total).toLocaleString() : "") + " · instant playback";
   else if (sec === "search") meta.textContent = state.search.q ? rows.length + " results for “" + state.search.q + "”" : "";
   else if (sec === "trending") meta.textContent = "Top " + rows.length + " most-seeded among the latest movie & TV releases";
   else if (sec === "top100") meta.textContent = "Top " + rows.length + " by seeders across the latest movie & TV feeds";
@@ -663,13 +710,15 @@ function renderCurrent() {
     list.appendChild(renderRow(rows[i], sec));
   }
 
-  if (sec === "movies" || sec === "tv") renderPager(sec);
+  if (sec === "movies" || sec === "tv" || sec === "free") renderPager(sec);
 }
 
 function loadSection(sec, force) {
   var def = SECTIONS[sec];
   if (def.type === "feed") {
     if (sec === "movies") loadMovies(state.movies.page); else loadTV(state.tv.page);
+  } else if (def.type === "ia") {
+    loadIA(state.ia.page);
   } else if (def.type === "csv") {
     if (force) delete csvState[def.q];
     loadCsv(sec);
@@ -690,10 +739,12 @@ function renderRow(r, sec) {
   playBtn.addEventListener("click", function (e) { e.stopPropagation(); togglePlay(r, row, sec); });
   actions.appendChild(playBtn);
 
-  var copyBtn = el("button", "btn mini", "⧉ Copy");
-  copyBtn.title = "Copy magnet link";
-  copyBtn.addEventListener("click", function (e) { e.stopPropagation(); copyText(r.magnet, "Magnet copied to clipboard"); });
-  actions.appendChild(copyBtn);
+  if (r.magnet) {
+    var copyBtn = el("button", "btn mini", "⧉ Copy");
+    copyBtn.title = "Copy magnet link";
+    copyBtn.addEventListener("click", function (e) { e.stopPropagation(); copyText(r.magnet, "Magnet copied to clipboard"); });
+    actions.appendChild(copyBtn);
+  }
 
   if (r.torrentUrl) {
     var tlink = document.createElement("a");
@@ -707,22 +758,25 @@ function renderRow(r, sec) {
     actions.appendChild(tlink);
   }
 
-  var openBtn = el("button", "btn mini primary", "⤓ Open");
-  openBtn.title = "Open with your default torrent client";
-  openBtn.addEventListener("click", function (e) {
-    e.stopPropagation();
-    var l = document.createElement("a");
-    l.href = r.magnet; document.body.appendChild(l); l.click(); l.remove();
-  });
-  actions.appendChild(openBtn);
+  if (r.magnet) {
+    var openBtn = el("button", "btn mini primary", "⤓ Open");
+    openBtn.title = "Open with your default torrent client";
+    openBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var l = document.createElement("a");
+      l.href = r.magnet; document.body.appendChild(l); l.click(); l.remove();
+    });
+    actions.appendChild(openBtn);
+  }
   row.appendChild(actions);
 
   var meta = el("div", "meta");
   if (r.quality) meta.appendChild(el("span", "chip q", r.quality));
   if (r.sxx) meta.appendChild(el("span", "chip q", r.sxx));
-  meta.appendChild(el("span", "chip", "💾 " + r.sizeStr));
-  meta.appendChild(el("span", "chip seed", "▲ " + r.seeds + " seeds"));
-  meta.appendChild(el("span", "chip leech", "▼ " + r.peers + " peers"));
+  if (r.sizeStr) meta.appendChild(el("span", "chip", "💾 " + r.sizeStr));
+  if (r.seeds != null) meta.appendChild(el("span", "chip seed", "▲ " + r.seeds + " seeds"));
+  if (r.peers != null) meta.appendChild(el("span", "chip leech", "▼ " + r.peers + " peers"));
+  if (r.isIA && r.downloads) meta.appendChild(el("span", "chip", "⬇ " + Number(r.downloads).toLocaleString() + " downloads"));
   var age = fmtAge(r.dateUnix);
   if (age) meta.appendChild(el("span", "chip", "🕒 " + age));
   if (r.rating) meta.appendChild(el("span", "chip", "★ " + r.rating));
@@ -753,13 +807,17 @@ function renderPager(sec) {
   prev.disabled = st.page <= 1;
   prev.addEventListener("click", function () {
     if (playerSection === sec) closePlayer();
-    if (sec === "movies") loadMovies(st.page - 1); else loadTV(st.page - 1);
+    if (sec === "movies") loadMovies(st.page - 1);
+    else if (sec === "tv") loadTV(st.page - 1);
+    else loadIA(st.page - 1);
   });
   var next = el("button", "btn", "Next →");
   if (st.pages && st.page >= st.pages) next.disabled = true;
   next.addEventListener("click", function () {
     if (playerSection === sec) closePlayer();
-    if (sec === "movies") loadMovies(st.page + 1); else loadTV(st.page + 1);
+    if (sec === "movies") loadMovies(st.page + 1);
+    else if (sec === "tv") loadTV(st.page + 1);
+    else loadIA(st.page + 1);
   });
   pager.appendChild(prev);
   pager.appendChild(el("span", "", "Page " + st.page));
@@ -815,6 +873,103 @@ function pickVideoFile(files) {
   return (modern.length ? modern : vids)[0];
 }
 
+/* ---- archive.org direct-stream player ---- */
+
+function iaFileUrl(id, name) {
+  return "https://archive.org/download/" + encodeURIComponent(id) + "/" +
+    name.split("/").map(encodeURIComponent).join("/");
+}
+
+function downloadUrl(url, msg) {
+  var a = document.createElement("a");
+  a.href = url; a.target = "_blank"; a.rel = "noopener";
+  a.setAttribute("download", "");
+  document.body.appendChild(a); a.click(); a.remove();
+  toast(msg || "Download started");
+}
+
+function startIaStream(r) {
+  playerOpenSince = Date.now();
+  setStatus("Fetching file list from archive.org…", true);
+  fetchJSON("https://archive.org/metadata/" + encodeURIComponent(r.iaId), 15000).then(function (md) {
+    if (!playerCard || playerRow !== r) return;
+    var files = (md && md.files) || [];
+    var vids = files.filter(function (f) { return /\.(mp4|m4v|webm|ogv)$/i.test(f.name || ""); });
+    if (!vids.length) {
+      setStatus("No playable video file", false);
+      setNote("This item has no browser-playable video. Open the item page instead: https://archive.org/details/" + r.iaId);
+      return;
+    }
+    var pick = null, i;
+    for (i = 0; i < vids.length; i++) if (vids[i].name === r.iaId + ".mp4") { pick = vids[i]; break; }
+    if (!pick) for (i = 0; i < vids.length; i++) if (/h.?264/i.test(vids[i].format || "")) { pick = vids[i]; break; }
+    if (!pick) pick = vids.slice().sort(function (a, b) { return (Number(b.size) || 0) - (Number(a.size) || 0); })[0];
+    buildIaFileList(r, vids, pick);
+    streamIa(r, pick);
+  }).catch(function (e) {
+    if (!playerCard) return;
+    setStatus("Could not reach archive.org", false);
+    setNote(e.message || String(e));
+  });
+}
+
+function streamIa(r, file) {
+  if (!playerCard) return;
+  if (currentMedia && currentMedia.parentNode) currentMedia.parentNode.removeChild(currentMedia);
+  currentFile = null;
+  var wrap = playerCard.querySelector(".ip-video");
+  wrap.innerHTML = "";
+  var v = document.createElement("video");
+  v.controls = true; v.autoplay = true; v.preload = "auto";
+  v.setAttribute("playsinline", "");
+  v.src = iaFileUrl(r.iaId, file.name);
+  wrap.appendChild(v);
+  currentMedia = v;
+  setStatus("▶ Streaming " + file.name + " (" + fmtSize(file.size) + ") — direct from archive.org", false);
+  var p = v.play();
+  if (p && p.catch) p.catch(function () { setNote("Autoplay was blocked — press ▶ on the video to start."); });
+}
+
+function buildIaFileList(r, vids, pick) {
+  var sel = playerCard.querySelector(".ip-filesel");
+  sel.innerHTML = "";
+  vids.forEach(function (f) {
+    var o = document.createElement("option");
+    o.value = f.name;
+    o.textContent = f.name + " (" + fmtSize(f.size) + ")";
+    if (f === pick) o.selected = true;
+    sel.appendChild(o);
+  });
+  playerCard.querySelector(".ip-controls").style.display = "flex";
+  playerCard.querySelector(".ip-dlhint").textContent = "Direct HTTP stream from archive.org — no peers needed";
+  sel.onchange = function () {
+    var f = vids.filter(function (x) { return x.name === sel.value; })[0];
+    if (f) streamIa(r, f);
+  };
+  var box = playerCard.querySelector(".ip-files");
+  box.innerHTML = "";
+  vids.forEach(function (f) {
+    var row = el("div", "frow");
+    row.appendChild(el("span", "fic", fileIcon(f.name)));
+    row.appendChild(el("span", "fname", f.name));
+    row.appendChild(el("span", "fsz", fmtSize(f.size)));
+    var bar = el("div", "fbar");
+    var fill = document.createElement("i");
+    fill.style.width = "100%";
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    var a = document.createElement("a");
+    a.className = "btn mini fsave";
+    a.textContent = "⤓ Download";
+    a.href = iaFileUrl(r.iaId, f.name);
+    a.target = "_blank"; a.rel = "noopener";
+    a.setAttribute("download", "");
+    a.addEventListener("click", function (e) { e.stopPropagation(); toast("Downloading " + f.name); });
+    row.appendChild(a);
+    box.appendChild(row);
+  });
+}
+
 function togglePlay(r, rowEl, sec) {
   if (playerCard && playerRow === r) { closePlayer(); return; }
   openPlayer(r, rowEl, sec);
@@ -843,8 +998,13 @@ function openPlayer(r, rowEl, sec) {
 
   playerCard.querySelector(".ip-title").textContent = r.title;
   playerCard.querySelector(".ip-close").addEventListener("click", closePlayer);
-  playerCard.querySelector(".ip-savetorrent").addEventListener("click", saveTorrentFile);
+  playerCard.querySelector(".ip-savetorrent").addEventListener("click", function () {
+    if (playerRow && playerRow.isIA) downloadUrl(playerRow.torrentUrl, "Downloading .torrent from archive.org…");
+    else saveTorrentFile();
+  });
   playerCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  if (r.isIA) { startIaStream(r); return; }
 
   setStatus("Loading WebTorrent engine…", true);
   playerOpenSince = Date.now();
@@ -976,13 +1136,13 @@ function tickPlayer() {
   var t = wtTorrent;
   if (!t || !t.files || !t.files.length) {
     setStatus("Connecting to swarm… " + elapsed + "s · " + (t ? t.numPeers : 0) + " peers", true);
-    if (elapsed > 45) setNote("Still no metadata — this swarm likely has no WebTorrent (WebRTC) peers. Use ⤓ Open to download with qBittorrent/WebTorrent Desktop instead.");
+    if (elapsed > 25) setNote("No WebTorrent peers found. Mainstream swarms (YTS/EZTV) usually have none, so in-browser play can't start — use ⤓ Open / ⤓ .torrent, or open the 🆓 Free Movies section which streams instantly.");
     return;
   }
   var pct = Math.round(t.progress * 100);
   setStatus("▼ " + fmtSize(t.downloadSpeed) + "/s · " + pct + "% · " + t.numPeers + " peers · " + Math.round(t.downloaded / 1048576) + " MB down", false);
-  if (t.downloaded === 0 && t.numPeers === 0 && elapsed > 90) {
-    setNote("No peers are connecting. This torrent has no browser-reachable peers right now — use ⤓ Open (magnet) with a desktop client.");
+  if (t.downloaded === 0 && t.numPeers === 0 && elapsed > 60) {
+    setNote("No browser-reachable peers for this torrent. Use ⤓ Open (magnet) with a desktop client, or try 🆓 Free Movies for instant playback.");
   }
   var rows = playerCard.querySelectorAll(".ip-files .frow");
   for (var i = 0; i < rows.length; i++) {
@@ -1014,6 +1174,7 @@ function saveTorrentFile() {
 function closePlayer() {
   if (ticker) { clearInterval(ticker); ticker = null; }
   if (currentMedia && currentMedia.parentNode) currentMedia.parentNode.removeChild(currentMedia);
+  if (currentMedia && currentMedia.pause) { try { currentMedia.pause(); } catch (e) {} }
   currentMedia = null; currentFile = null;
   if (playerCard && playerCard.parentNode) playerCard.parentNode.removeChild(playerCard);
   if (playerRow && playerRow._rowEl) playerRow._rowEl.classList.remove("playing");
@@ -1060,6 +1221,7 @@ document.querySelectorAll(".nav-item").forEach(function (n) {
     var def = SECTIONS[sec];
     if (playerCard && playerSection !== sec) closePlayer();
     if (def.type === "csv") loadCsv(sec);      // lazy-load, no-op if cached
+    if (def.type === "ia" && !state.ia.rows && !state.ia.loading) loadIA(1);
     showSection(sec);
   });
 });
@@ -1090,8 +1252,8 @@ document.getElementById("copyAllT").addEventListener("click", function () {
   copyText(rows.map(function (r) { return r.magnet; }).join("\n"), rows.length + " TV magnets copied");
 });
 document.getElementById("copyAllPlain").addEventListener("click", function () {
-  var rows = visibleRows(currentSec);
-  if (!rows.length) return;
+  var rows = visibleRows(currentSec).filter(function (r) { return r.magnet; });
+  if (!rows.length) { toast("This section streams directly — use ⤓ Download on each file"); return; }
   copyText(rows.map(function (r) { return r.magnet; }).join("\n"), rows.length + " magnets copied");
 });
 
