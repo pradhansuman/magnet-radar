@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MagnetRadar — Browse Torrents</title>
+<meta name="theme-color" content="#0b0f14">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <style>
   :root{
     --bg:#0b0f14; --panel:#11161d; --panel2:#161d26; --line:#1f2a36;
@@ -289,6 +293,9 @@
     <label>Category
       <select id="liveCatSel"></select>
     </label>
+    <label>Country
+      <select id="liveCountrySel"></select>
+    </label>
     <input type="text" id="liveFilter" placeholder="Filter channels by name…" autocomplete="off">
     <span class="sec-sub">streams are public HLS feeds — some are geo-blocked or temporarily offline</span>
   </div>
@@ -296,6 +303,12 @@
   <div class="toolbar sec-toolbar" data-for="radio" style="display:none;">
     <label>Genre
       <select id="radioTagSel"></select>
+    </label>
+    <label>Country
+      <select id="radioCountrySel"></select>
+    </label>
+    <label>Language
+      <select id="radioLangSel"></select>
     </label>
     <input type="text" id="radioFilter" placeholder="Filter stations by name…" autocomplete="off">
     <span class="sec-sub">community-indexed public streams — some are offline or geo-blocked</span>
@@ -412,8 +425,8 @@ var state = {
   movies: { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   tv:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   search: { q: "", rows: null, loading: false, error: null },
-  live:   { cat: "news", rows: null, loading: false, error: null, q: "" },
-  radio:  { tag: "top", rows: null, loading: false, error: null, q: "" }
+  live:   { cat: "news", country: "", rows: null, loading: false, error: null, q: "" },
+  radio:  { tag: "top", country: "", lang: "", rows: null, loading: false, error: null, q: "" }
 };
 var iaState = {};   // sec -> {page, rows, pages, total, loading, error}
 var LIVE_CATS = [["news","News"],["movies","Movies"],["music","Music"],["sports","Sports"],["documentary","Documentary"],["kids","Kids"],["science","Science"],["entertainment","Entertainment"],["general","General"],["travel","Travel"],["weather","Weather"]];
@@ -704,8 +717,48 @@ function showSection(sec) {
     n.classList.toggle("active", n.getAttribute("data-sec") === sec);
   });
   if (playerCard && playerSection !== sec) dockPlayer();
+  else if (playerCard && playerSection === sec) undockPlayer();
+  setHash(sec);
   renderCurrent();
 }
+
+function setHash(sec) {
+  var h = "#/" + sec + ((sec === "livetv") ? "/" + state.live.cat : (sec === "radio") ? "/" + state.radio.tag : "");
+  try { if (location.hash !== h) history.replaceState(null, "", h); } catch (e) {}
+}
+
+function dockPlayer() {
+  if (!playerCard) return;
+  if (playerCard.parentNode !== document.body) {
+    document.body.appendChild(playerCard);
+    playerCard.classList.add("docked");
+    toast("▶ Keeps playing — see the bottom-right corner");
+  }
+}
+
+function undockPlayer() {
+  if (!playerCard || playerCard.parentNode !== document.body) return;
+  playerCard.classList.remove("docked");
+  playerCard.classList.remove("mini");
+  var list = document.getElementById("secList");
+  if (list) {
+    var anchor = (playerRow && playerRow._rowEl && playerRow._rowEl.parentNode === list) ? playerRow._rowEl : null;
+    if (anchor) anchor.after(playerCard);
+    else list.insertBefore(playerCard, list.firstChild);
+  }
+}
+
+function applyHash() {
+  var h = (location.hash || "").replace(/^#\/?/, "");
+  if (!h) return;
+  var parts = h.split("/").map(decodeURIComponent);
+  var sec = parts[0];
+  if (!SECTIONS[sec]) { showSection("movies"); return; }
+  if (sec === "livetv" && parts[1] && parts[1] !== state.live.cat) { state.live.cat = parts[1]; loadLive(parts[1]); }
+  if (sec === "radio" && parts[1] && parts[1] !== state.radio.tag) { state.radio.tag = parts[1]; loadRadio(parts[1]); }
+  showSection(sec);
+}
+window.addEventListener("hashchange", applyHash);
 
 function dockPlayer() {
   if (!playerCard) return;
@@ -921,6 +974,7 @@ function renderRow(r, sec) {
     var rm = el("div", "meta");
     rm.appendChild(el("span", "chip seed", "● LIVE"));
     if (r.group) rm.appendChild(el("span", "chip q", r.group));
+    if (deadFails(r.url) >= 2) rm.appendChild(el("span", "chip leech", "⚠ failed " + deadFails(r.url) + "× before"));
     if (r.codec) rm.appendChild(el("span", "chip", r.codec + (r.bitrate ? " · " + r.bitrate + " kbps" : "")));
     var tg = (r.tags || "").split(",")[0].trim();
     if (tg) rm.appendChild(el("span", "chip", tg));
@@ -957,6 +1011,7 @@ function renderRow(r, sec) {
     var lm = el("div", "meta");
     lm.appendChild(el("span", "chip seed", "● LIVE"));
     if (r.group) lm.appendChild(el("span", "chip q", r.group));
+    if (deadFails(r.url) >= 2) lm.appendChild(el("span", "chip leech", "⚠ failed " + deadFails(r.url) + "× before"));
     if (/\[geo-blocked\]/i.test(r.title)) lm.appendChild(el("span", "chip leech", "⚠ may be geo-blocked"));
     row.appendChild(lm);
     row.addEventListener("click", function (e) {
@@ -1072,7 +1127,8 @@ function parseM3U(text) {
       var name = L.slice(L.lastIndexOf(",") + 1).trim();
       var logo = (L.match(/tvg-logo="([^"]*)"/) || [])[1] || "";
       var group = (L.match(/group-title="([^"]*)"/) || [])[1] || "";
-      cur = { title: name, logo: logo, group: group, isLive: true, magnet: null, quality: null, sizeStr: null, sizeB: 0, seeds: null, peers: null, dateUnix: 0 };
+      var cc = (L.match(/tvg-id="[^"]*?\.([a-z]{2})@/i) || [])[1] || "";
+      cur = { title: name, logo: logo, group: group, cc: cc, isLive: true, magnet: null, quality: null, sizeStr: null, sizeB: 0, seeds: null, peers: null, dateUnix: 0 };
     } else if (L && L.charAt(0) !== "#" && cur) {
       cur.url = L;
       rows.push(cur);
@@ -1102,6 +1158,7 @@ function loadLive(cat) {
     .then(function (txt) {
       st.rows = parseM3U(txt);
       st.loading = false;
+      refreshLiveCountrySel(st.rows);
       if (currentSec === "livetv") renderCurrent();
     })
     .catch(function (e) {
@@ -1132,6 +1189,8 @@ function loadRadio(tag) {
   if (currentSec === "radio") renderCurrent();
   var path = "/json/stations/search?limit=500&order=clickcount&reverse=true&hidebroken=true";
   if (tag !== "top") path += "&tag=" + encodeURIComponent(tag);
+  if (st.country) path += "&countrycode=" + encodeURIComponent(st.country);
+  if (st.lang) path += "&language=" + encodeURIComponent(st.lang);
   rbFetch(path)
     .then(function (list) {
       st.rows = (list || []).filter(function (s) { return (s.url_resolved || s.url || "").indexOf("https://") === 0; }).map(function (s) {
@@ -1352,16 +1411,20 @@ function startLiveStream(r) {
     playerCard.querySelector(".ip-hint").textContent = "Live HLS stream from the iptv-org catalog — channels are third-party public feeds and can go offline.";
     if (v.canPlayType("application/vnd.apple.mpegurl")) {
       v.src = r.url;
+      v.addEventListener("playing", function () { if (playerCard && playerRow === r) clearDead(r.url); });
+      v.addEventListener("error", function () { if (playerCard && playerRow === r) markDead(r.url); });
       var pp = v.play(); if (pp && pp.catch) pp.catch(function () {});
     } else if (window.Hls && Hls.isSupported()) {
       hlsCurrent = new Hls({ enableWorker: true });
       hlsCurrent.loadSource(r.url);
       hlsCurrent.attachMedia(v);
       hlsCurrent.on(Hls.Events.MANIFEST_PARSED, function () {
+        clearDead(r.url);
         var pp = v.play(); if (pp && pp.catch) pp.catch(function () {});
       });
       hlsCurrent.on(Hls.Events.ERROR, function (ev, data) {
         if (!data || !data.fatal) return;
+        markDead(r.url);
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
           setNote("Stream network error — this channel may be offline, geo-blocked, or rate-limited. Try another channel.");
         } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
@@ -1407,8 +1470,9 @@ function startRadioStream(r) {
   }
   var p = a.play();
   if (p && p.catch) p.catch(function () {});
+  a.addEventListener("playing", function () { if (playerCard && playerRow === r) clearDead(r.url); });
   a.addEventListener("error", function () {
-    if (playerCard && playerRow === r) setNote("This station's stream failed — offline, geo-blocked, or unsupported format. Try another.");
+    if (playerCard && playerRow === r) { markDead(r.url); setNote("This station's stream failed — offline, geo-blocked, or unsupported format. Try another."); }
   });
 }
 
@@ -1732,11 +1796,30 @@ document.getElementById("liveFilter").addEventListener("input", function (e) {
 });
 document.getElementById("liveCatSel").addEventListener("change", function (e) {
   if (playerSection === "livetv") closePlayer();
-  loadLive(e.target.value);
+  state.live.cat = e.target.value;
+  loadLive(state.live.cat);
+  setHash("livetv");
+});
+document.getElementById("liveCountrySel").addEventListener("change", function (e) {
+  state.live.country = e.target.value;
+  if (playerSection === "livetv") closePlayer();
+  renderCurrent();
 });
 document.getElementById("radioTagSel").addEventListener("change", function (e) {
   if (playerSection === "radio") closePlayer();
-  loadRadio(e.target.value);
+  state.radio.tag = e.target.value;
+  loadRadio(state.radio.tag);
+  setHash("radio");
+});
+document.getElementById("radioCountrySel").addEventListener("change", function (e) {
+  if (playerSection === "radio") closePlayer();
+  state.radio.country = e.target.value;
+  loadRadio(state.radio.tag);
+});
+document.getElementById("radioLangSel").addEventListener("change", function (e) {
+  if (playerSection === "radio") closePlayer();
+  state.radio.lang = e.target.value;
+  loadRadio(state.radio.tag);
 });
 var radioFilterTimer = null;
 document.getElementById("radioFilter").addEventListener("input", function (e) {
@@ -1765,7 +1848,10 @@ document.getElementById("radioFilter").addEventListener("input", function (e) {
     rsel.appendChild(o);
   });
 })();
-showSection("movies");
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  navigator.serviceWorker.register("/sw.js").catch(function () {});
+}
+if (location.hash && location.hash.length > 2) applyHash(); else showSection("movies");
 loadMovies(1);
 loadTV(1);
 </script>
