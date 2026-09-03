@@ -4,10 +4,11 @@ A single-file web app that lists the **latest torrents** with **ready-to-copy ma
 
 ## Features
 
+- 🆓 **Instant-play library (archive.org, public domain / Creative Commons)** — Feature Films, Film Noir, Horror, Sci-Fi, Westerns, Cartoons & Animation, Movie Trailers, Free Music — click and it streams immediately over HTTP, with per-file downloads and .torrent links
 - 🎬 **Movies** — latest YTS additions; every quality variant (2160p / 1080p / 720p…) listed as its own torrent with its own magnet
 - 📺 **TV Shows** — latest EZTV releases with official magnet URLs
 - 🔍 **Search All** — full-text search across all categories (Torrents-CSV)
-- ▶ **Play** — stream video in the browser via the WebTorrent engine (WebRTC peers)
+- ▶ **Play** — stream torrents in the browser via the WebTorrent engine (works when a swarm has WebRTC peers or webseeds; the app tells you quickly when it doesn't)
 - ⤓ **Downloads** — save individual files from a torrent, save the generated `.torrent`, or hand the magnet to your desktop client (qBittorrent, WebTorrent Desktop…)
 - ⧉ **Copy magnet** / **Copy all magnets** — one row or the whole list
 - Filters: quality, min seeds · sorting: newest / most seeded / largest · pagination · optional 60s auto-refresh · IMDb links
