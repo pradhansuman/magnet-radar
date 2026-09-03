@@ -8,6 +8,7 @@ A single-file web app that lists the **latest torrents** with **ready-to-copy ma
 - 🎬 **Movies** — latest YTS additions; every quality variant (2160p / 1080p / 720p…) listed as its own torrent with its own magnet
 - 📺 **TV Shows** — latest EZTV releases with official magnet URLs
 - 🔍 **Search All** — full-text search across all categories (Torrents-CSV)
+- ★ **Favorites** — star any movie, show, channel, station or track; a persistent mini-player keeps radio/TV/music running while you browse
 - ▶ **Play** — stream torrents in the browser via the WebTorrent engine (works when a swarm has WebRTC peers or webseeds; the app tells you quickly when it doesn't)
 - ⤓ **Downloads** — save individual files from a torrent, save the generated `.torrent`, or hand the magnet to your desktop client (qBittorrent, WebTorrent Desktop…)
 - ⧉ **Copy magnet** / **Copy all magnets** — one row or the whole list

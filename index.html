@@ -141,6 +141,21 @@
   .fbar{height:6px; background:#0d1319; border-radius:4px; overflow:hidden; border:1px solid var(--line);}
   .fbar i{display:block; height:100%; background:var(--accent); width:0%; transition:width .4s ease;}
   .ip-hint{font-size:11.5px; color:var(--muted); line-height:1.55;}
+  .favbtn.on{ color:#facc15; border-color:#facc15; }
+
+  /* ---- docked mini-player ---- */
+  body > .iplayer.docked{
+    position:fixed; right:14px; bottom:14px; left:auto; top:auto;
+    width:min(520px, 94vw); z-index:60; margin:0;
+    box-shadow:0 16px 50px rgba(0,0,0,.65);
+  }
+  body > .iplayer.docked .ip-title{ cursor:pointer; }
+  body > .iplayer.docked.mini{ width:300px; padding:10px 12px; }
+  body > .iplayer.docked.mini .ip-video{ min-height:0; }
+  body > .iplayer.docked.mini .ip-video video{ max-height:120px; }
+  body > .iplayer.docked.mini .ip-files,
+  body > .iplayer.docked.mini .ip-hint,
+  body > .iplayer.docked.mini .ip-note{ display:none !important; }
 
   .samples{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; justify-content:center;}
   .samples button{
@@ -195,6 +210,8 @@
 
 <aside id="sidebar">
   <div class="side-title">Browse Torrents</div>
+  <div class="nav-sep">You</div>
+  <button class="nav-item" data-sec="favs"><span class="ic">★</span>Favorites</button>
   <div class="nav-sep">Instant Playback · archive.org</div>
   <button class="nav-item" data-sec="free"><span class="ic">🆓</span>Feature Films</button>
   <button class="nav-item" data-sec="noir"><span class="ic">🕵</span>Film Noir</button>
@@ -368,6 +385,7 @@ function ytsDateToUnix(s) {
 /* ---------------- sections registry & state ---------------- */
 
 var SECTIONS = {
+  favs:     { icon: "★", name: "Favorites",          sub: "saved on this device", type: "favs" },
   free:     { icon: "🆓", name: "Feature Films",  sub: "archive.org · public domain · instant play", type: "ia", coll: "feature_films" },
   noir:     { icon: "🕵️", name: "Film Noir",       sub: "archive.org · instant play", type: "ia", coll: "feature_films", subj: "film noir" },
   horror:   { icon: "👻", name: "Horror",          sub: "archive.org · instant play", type: "ia", coll: "feature_films", subj: "horror" },
@@ -619,6 +637,7 @@ function feedsLoading() { return state.movies.loading || state.tv.loading; }
 function secState(sec) {
   var def = SECTIONS[sec];
   if (def.type === "feed") return state[sec];
+  if (def.type === "favs") return { rows: loadFavs(), loading: false, error: null };
   if (def.type === "ia") return iaState[sec] || { rows: null, loading: false, error: null };
   if (def.type === "livetv") return state.live;
   if (def.type === "radio") return state.radio;
@@ -629,6 +648,7 @@ function secState(sec) {
 function visibleRows(sec) {
   var def = SECTIONS[sec];
   if (def.type === "computed") return computedRows(sec);
+  if (def.type === "favs") return loadFavs();
   if (def.type === "ia") { var s = iaState[sec]; return (s && s.rows) || []; }
   if (def.type === "livetv") {
     var q = (state.live.q || "").toLowerCase();
@@ -683,7 +703,17 @@ function showSection(sec) {
   document.querySelectorAll(".nav-item").forEach(function (n) {
     n.classList.toggle("active", n.getAttribute("data-sec") === sec);
   });
+  if (playerCard && playerSection !== sec) dockPlayer();
   renderCurrent();
+}
+
+function dockPlayer() {
+  if (!playerCard) return;
+  if (playerCard.parentNode !== document.body) {
+    document.body.appendChild(playerCard);
+    playerCard.classList.add("docked");
+    toast("▶ Keeps playing — see the bottom-right corner");
+  }
 }
 
 function renderCurrent() {
@@ -759,6 +789,8 @@ function renderCurrent() {
         samples.appendChild(b);
       });
       ec2.appendChild(samples); list.appendChild(ec2);
+    } else if (sec === "favs") {
+      list.appendChild(el("div", "empty", "No favorites yet — tap ☆ on any row to keep it here."));
     } else {
       list.appendChild(el("div", "empty", "Nothing loaded yet — press Refresh."));
     }
@@ -769,6 +801,7 @@ function renderCurrent() {
 
   if (sec === "movies") meta.textContent = rows.length + " torrent files · page " + state.movies.page + (state.movies.total ? " of ~" + state.movies.total + " movies" : "");
   else if (sec === "tv") meta.textContent = rows.length + " releases · page " + state.tv.page + (state.tv.total ? " · " + Number(state.tv.total).toLocaleString() + " indexed" : "");
+  else if (def.type === "favs") meta.textContent = rows.length + " saved · click a row to resume · ★ removes it";
   else if (def.type === "ia") meta.textContent = rows.length + " " + (sec === "freemusic" ? "tracks" : "titles") + " · page " + st.page + (st.total ? " of ~" + Number(st.total).toLocaleString() : "") + " · instant playback";
   else if (def.type === "livetv") {
     var tot = (state.live.rows || []).length;
@@ -813,6 +846,53 @@ function loadSection(sec, force) {
   // computed/search handled elsewhere
 }
 
+/* ---------------- favorites ---------------- */
+
+function loadFavs() {
+  try { return JSON.parse(localStorage.getItem("mr_favs") || "[]"); } catch (e) { return []; }
+}
+function saveFavs(f) {
+  try { localStorage.setItem("mr_favs", JSON.stringify(f)); } catch (e) { toast("Could not save favorites (storage blocked)"); }
+}
+function favKey(r) {
+  if (r.isRadio || r.isLive) return (r.isRadio ? "radio:" : "live:") + r.url;
+  if (r.isIA) return "ia:" + r.iaId;
+  return "t:" + (r.magnet || r.title);
+}
+function isFav(r) {
+  var k = favKey(r);
+  return loadFavs().some(function (f) { return f.key === k; });
+}
+function toggleFav(r) {
+  var f = loadFavs();
+  var k = favKey(r);
+  var idx = -1;
+  for (var i = 0; i < f.length; i++) if (f[i].key === k) { idx = i; break; }
+  if (idx >= 0) { f.splice(idx, 1); saveFavs(f); return false; }
+  var copy = {};
+  for (var kk in r) if (r.hasOwnProperty(kk) && kk.indexOf("_") !== 0) copy[kk] = r[kk];
+  copy.key = k; copy.favAt = Date.now();
+  f.unshift(copy);
+  if (f.length > 100) f = f.slice(0, 100);
+  saveFavs(f);
+  return true;
+}
+function makeFavBtn(r) {
+  var on = isFav(r);
+  var b = el("button", "btn mini favbtn" + (on ? " on" : ""), on ? "★" : "☆");
+  b.title = on ? "Remove from Favorites" : "Save to Favorites";
+  b.addEventListener("click", function (e) {
+    e.stopPropagation();
+    var added = toggleFav(r);
+    b.textContent = added ? "★" : "☆";
+    b.classList.toggle("on", added);
+    b.title = added ? "Remove from Favorites" : "Save to Favorites";
+    toast(added ? "★ Saved to Favorites" : "Removed from Favorites");
+    if (currentSec === "favs") renderCurrent();
+  });
+  return b;
+}
+
 function renderRow(r, sec) {
   var row = el("div", "row");
   if (playerRow === r) row.classList.add("playing");
@@ -829,6 +909,7 @@ function renderRow(r, sec) {
     rt.appendChild(document.createTextNode(r.title));
     row.appendChild(rt);
     var ra = el("div", "actions");
+    ra.appendChild(makeFavBtn(r));
     var rpb = el("button", "btn mini primary", "▶ Listen");
     rpb.addEventListener("click", function (e) { e.stopPropagation(); togglePlay(r, row, sec); });
     ra.appendChild(rpb);
@@ -864,6 +945,7 @@ function renderRow(r, sec) {
     lt.appendChild(document.createTextNode(r.title));
     row.appendChild(lt);
     var acts = el("div", "actions");
+    acts.appendChild(makeFavBtn(r));
     var pb = el("button", "btn mini primary", "▶ Watch");
     pb.addEventListener("click", function (e) { e.stopPropagation(); togglePlay(r, row, sec); });
     acts.appendChild(pb);
@@ -889,6 +971,7 @@ function renderRow(r, sec) {
   row.appendChild(title);
 
   var actions = el("div", "actions");
+  actions.appendChild(makeFavBtn(r));
   var playBtn = el("button", "btn mini", "▶ Play");
   playBtn.title = "Stream right here — no navigation";
   playBtn.addEventListener("click", function (e) { e.stopPropagation(); togglePlay(r, row, sec); });
@@ -1352,6 +1435,9 @@ function openPlayer(r, rowEl, sec) {
 
   playerCard.querySelector(".ip-title").textContent = r.title;
   playerCard.querySelector(".ip-close").addEventListener("click", closePlayer);
+  playerCard.querySelector(".ip-title").addEventListener("click", function () {
+    if (playerCard && playerCard.parentNode === document.body) playerCard.classList.toggle("mini");
+  });
   var stBtn = playerCard.querySelector(".ip-savetorrent");
   stBtn.style.display = (r.isLive || r.isIA || r.isRadio) ? "none" : "";
   stBtn.addEventListener("click", function () { saveTorrentFile(); });
@@ -1540,7 +1626,7 @@ function closePlayer() {
 }
 
 document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape" && playerCard) closePlayer();
+  if (e.key === "Escape" && playerCard && playerCard.parentNode !== document.body) closePlayer();
 });
 
 /* ---------------- clipboard & toast ---------------- */
