@@ -1029,21 +1029,30 @@ function downloadUrl(url, msg) {
 function startIaStream(r) {
   playerOpenSince = Date.now();
   setStatus("Fetching file list from archive.org…", true);
+  playerCard.querySelector(".ip-hint").textContent = "Direct HTTP stream from archive.org — no torrent peers involved. Switch files below; ⤓ Download saves the file.";
   fetchJSON("https://archive.org/metadata/" + encodeURIComponent(r.iaId), 15000).then(function (md) {
     if (!playerCard || playerRow !== r) return;
     var files = (md && md.files) || [];
     var vids = files.filter(function (f) { return /\.(mp4|m4v|webm|ogv)$/i.test(f.name || ""); });
-    if (!vids.length) {
-      setStatus("No playable video file", false);
-      setNote("This item has no browser-playable video. Open the item page instead: https://archive.org/details/" + r.iaId);
+    var auds = files.filter(function (f) { return /\.(mp3|flac|ogg|oga|m4a|wav|opus|aac)$/i.test(f.name || ""); });
+    if (!vids.length && !auds.length) {
+      setStatus("No playable media", false);
+      setNote("This item has no browser-playable audio or video. Open the item page instead: https://archive.org/details/" + r.iaId);
       return;
     }
+    var useAudio = !vids.length;
+    var list = useAudio ? auds : vids;
     var pick = null, i;
-    for (i = 0; i < vids.length; i++) if (vids[i].name === r.iaId + ".mp4") { pick = vids[i]; break; }
-    if (!pick) for (i = 0; i < vids.length; i++) if (/h.?264/i.test(vids[i].format || "")) { pick = vids[i]; break; }
-    if (!pick) pick = vids.slice().sort(function (a, b) { return (Number(b.size) || 0) - (Number(a.size) || 0); })[0];
-    buildIaFileList(r, vids, pick);
-    streamIa(r, pick);
+    if (useAudio) {
+      for (i = 0; i < list.length; i++) if (/\.mp3$/i.test(list[i].name)) { pick = list[i]; break; }
+      if (!pick) pick = list[0];
+    } else {
+      for (i = 0; i < list.length; i++) if (list[i].name === r.iaId + ".mp4") { pick = list[i]; break; }
+      if (!pick) for (i = 0; i < list.length; i++) if (/h.?264/i.test(list[i].format || "")) { pick = list[i]; break; }
+      if (!pick) pick = list.slice().sort(function (a, b) { return (Number(b.size) || 0) - (Number(a.size) || 0); })[0];
+    }
+    buildIaFileList(r, list, pick, useAudio);
+    streamIa(r, pick, useAudio);
   }).catch(function (e) {
     if (!playerCard) return;
     setStatus("Could not reach archive.org", false);
@@ -1051,27 +1060,28 @@ function startIaStream(r) {
   });
 }
 
-function streamIa(r, file) {
+function streamIa(r, file, useAudio) {
   if (!playerCard) return;
   if (currentMedia && currentMedia.parentNode) currentMedia.parentNode.removeChild(currentMedia);
   currentFile = null;
   var wrap = playerCard.querySelector(".ip-video");
   wrap.innerHTML = "";
-  var v = document.createElement("video");
+  var v = document.createElement(useAudio ? "audio" : "video");
   v.controls = true; v.autoplay = true; v.preload = "auto";
   v.setAttribute("playsinline", "");
+  if (useAudio) v.style.cssText = "width:100%;margin:30px 0;";
   v.src = iaFileUrl(r.iaId, file.name);
   wrap.appendChild(v);
   currentMedia = v;
   setStatus("▶ Streaming " + file.name + " (" + fmtSize(file.size) + ") — direct from archive.org", false);
   var p = v.play();
-  if (p && p.catch) p.catch(function () { setNote("Autoplay was blocked — press ▶ on the video to start."); });
+  if (p && p.catch) p.catch(function () { setNote("Autoplay was blocked — press ▶ on the player to start."); });
 }
 
-function buildIaFileList(r, vids, pick) {
+function buildIaFileList(r, list, pick, useAudio) {
   var sel = playerCard.querySelector(".ip-filesel");
   sel.innerHTML = "";
-  vids.forEach(function (f) {
+  list.forEach(function (f) {
     var o = document.createElement("option");
     o.value = f.name;
     o.textContent = f.name + " (" + fmtSize(f.size) + ")";
@@ -1079,14 +1089,16 @@ function buildIaFileList(r, vids, pick) {
     sel.appendChild(o);
   });
   playerCard.querySelector(".ip-controls").style.display = "flex";
-  playerCard.querySelector(".ip-dlhint").textContent = "Direct HTTP stream from archive.org — no peers needed";
+  playerCard.querySelector(".ip-dlhint").textContent = useAudio
+    ? "Audio mode — every track streams directly from archive.org"
+    : "Direct HTTP stream from archive.org — no peers needed";
   sel.onchange = function () {
-    var f = vids.filter(function (x) { return x.name === sel.value; })[0];
-    if (f) streamIa(r, f);
+    var f = list.filter(function (x) { return x.name === sel.value; })[0];
+    if (f) streamIa(r, f, useAudio);
   };
   var box = playerCard.querySelector(".ip-files");
   box.innerHTML = "";
-  vids.forEach(function (f) {
+  list.forEach(function (f) {
     var row = el("div", "frow");
     row.appendChild(el("span", "fic", fileIcon(f.name)));
     row.appendChild(el("span", "fname", f.name));
@@ -1142,6 +1154,7 @@ function startLiveStream(r) {
     currentMedia = v;
     setStatus("📡 LIVE — " + r.title, false);
     setNote("Live streams start muted — click the 🔊 speaker on the video for sound. Some channels are geo-blocked or offline; just pick another.");
+    playerCard.querySelector(".ip-hint").textContent = "Live HLS stream from the iptv-org catalog — channels are third-party public feeds and can go offline.";
     if (v.canPlayType("application/vnd.apple.mpegurl")) {
       v.src = r.url;
       var pp = v.play(); if (pp && pp.catch) pp.catch(function () {});
