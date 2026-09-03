@@ -695,8 +695,11 @@ function renderCurrent() {
       def.type === "computed"
         ? "Computed live from the latest movie + TV feeds."
         : def.type === "ia"
-        ? "Public-domain films from archive.org — ▶ Play streams instantly over HTTP, no torrent peers needed."
+        ? (sec === "freemusic"
+            ? "Creative Commons music from archive.org netlabels — ▶ Play streams instantly; ⤓ Download saves any track. No torrents here."
+            : "Public-domain films from archive.org — ▶ Play streams instantly over HTTP, no torrent peers needed.")
         : "Keyword feed: “" + def.q + "” · results ranked by seeders.";
+    document.getElementById("copyAllPlain").style.display = def.type === "ia" ? "none" : "";
   }
 
   // loading?
@@ -746,7 +749,7 @@ function renderCurrent() {
 
   if (sec === "movies") meta.textContent = rows.length + " torrent files · page " + state.movies.page + (state.movies.total ? " of ~" + state.movies.total + " movies" : "");
   else if (sec === "tv") meta.textContent = rows.length + " releases · page " + state.tv.page + (state.tv.total ? " · " + Number(state.tv.total).toLocaleString() + " indexed" : "");
-  else if (def.type === "ia") meta.textContent = rows.length + " items · page " + st.page + (st.total ? " of ~" + Number(st.total).toLocaleString() : "") + " · instant playback";
+  else if (def.type === "ia") meta.textContent = rows.length + " " + (sec === "freemusic" ? "tracks" : "titles") + " · page " + st.page + (st.total ? " of ~" + Number(st.total).toLocaleString() : "") + " · instant playback";
   else if (def.type === "livetv") {
     var tot = (state.live.rows || []).length;
     meta.textContent = (tot ? "Showing " + rows.length + " of " + tot : "0") + " channels · category: " + liveCatLabel(state.live.cat) + " · click a channel to watch";
@@ -837,7 +840,7 @@ function renderRow(r, sec) {
     actions.appendChild(copyBtn);
   }
 
-  if (r.torrentUrl) {
+  if (r.torrentUrl && !r.isIA) {
     var tlink = document.createElement("a");
     tlink.className = "btn mini";
     tlink.href = r.torrentUrl;
@@ -1192,13 +1195,12 @@ function openPlayer(r, rowEl, sec) {
 
   playerCard.querySelector(".ip-title").textContent = r.title;
   playerCard.querySelector(".ip-close").addEventListener("click", closePlayer);
-  playerCard.querySelector(".ip-savetorrent").addEventListener("click", function () {
-    if (playerRow && playerRow.isIA) downloadUrl(playerRow.torrentUrl, "Downloading .torrent from archive.org…");
-    else saveTorrentFile();
-  });
+  var stBtn = playerCard.querySelector(".ip-savetorrent");
+  stBtn.style.display = (r.isLive || r.isIA) ? "none" : "";
+  stBtn.addEventListener("click", function () { saveTorrentFile(); });
   playerCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
-  playerCard.querySelector(".ip-savetorrent").style.display = r.isLive ? "none" : "";
+  playerCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
   if (r.isLive) { startLiveStream(r); return; }
   if (r.isIA) { startIaStream(r); return; }
