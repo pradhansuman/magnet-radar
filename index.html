@@ -195,8 +195,15 @@
 
 <aside id="sidebar">
   <div class="side-title">Browse Torrents</div>
-  <div class="nav-sep">Instant Playback</div>
-  <button class="nav-item" data-sec="free"><span class="ic">🆓</span>Free Movies · Instant</button>
+  <div class="nav-sep">Instant Playback · archive.org</div>
+  <button class="nav-item" data-sec="free"><span class="ic">🆓</span>Feature Films</button>
+  <button class="nav-item" data-sec="noir"><span class="ic">🕵</span>Film Noir</button>
+  <button class="nav-item" data-sec="horror"><span class="ic">👻</span>Horror</button>
+  <button class="nav-item" data-sec="scifi"><span class="ic">🚀</span>Sci-Fi</button>
+  <button class="nav-item" data-sec="western"><span class="ic">🤠</span>Westerns</button>
+  <button class="nav-item" data-sec="cartoons"><span class="ic">🐭</span>Cartoons & Animation</button>
+  <button class="nav-item" data-sec="trailers"><span class="ic">🎞️</span>Movie Trailers</button>
+  <button class="nav-item" data-sec="music"><span class="ic">🎵</span>Free Music</button>
   <button class="nav-item" data-sec="trending"><span class="ic">📈</span>Trending Torrents</button>
   <button class="nav-item" data-sec="top100"><span class="ic">⭐</span>Top 100 Torrents</button>
   <div class="nav-sep">Video</div>
@@ -342,7 +349,14 @@ function ytsDateToUnix(s) {
 /* ---------------- sections registry & state ---------------- */
 
 var SECTIONS = {
-  free:     { icon: "🆓", name: "Free Movies · Instant Play", sub: "archive.org · public domain · streams instantly, no peers needed", type: "ia" },
+  free:     { icon: "🆓", name: "Feature Films",  sub: "archive.org · public domain · instant play", type: "ia", coll: "feature_films" },
+  noir:     { icon: "🕵️", name: "Film Noir",       sub: "archive.org · instant play", type: "ia", coll: "feature_films", subj: "film noir" },
+  horror:   { icon: "👻", name: "Horror",          sub: "archive.org · instant play", type: "ia", coll: "feature_films", subj: "horror" },
+  scifi:    { icon: "🚀", name: "Sci-Fi",          sub: "archive.org · instant play", type: "ia", coll: "feature_films", subj: "sci-fi" },
+  western:  { icon: "🤠", name: "Westerns",        sub: "archive.org · instant play", type: "ia", coll: "feature_films", subj: "western" },
+  cartoons: { icon: "🐭", name: "Cartoons & Animation", sub: "archive.org · instant play", type: "ia", coll: "animationandcartoons" },
+  trailers: { icon: "🎞️", name: "Movie Trailers",   sub: "archive.org · instant play", type: "ia", coll: "movie_trailers" },
+  music:    { icon: "🎵", name: "Free Music",       sub: "archive.org netlabels · Creative Commons · instant play", type: "ia", coll: "netlabels", mt: "audio" },
   trending: { icon: "📈", name: "Trending Torrents", sub: "latest across sources · most seeded right now", type: "computed" },
   top100:   { icon: "⭐", name: "Top 100 Torrents",   sub: "latest across sources · ranked by seeders", type: "computed" },
   movies:   { icon: "🎬", name: "Movie Library",      sub: "YTS · newest additions", type: "feed" },
@@ -358,9 +372,9 @@ var SECTIONS = {
 var state = {
   movies: { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   tv:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
-  ia:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   search: { q: "", rows: null, loading: false, error: null }
 };
+var iaState = {};   // sec -> {page, rows, pages, total, loading, error}
 var csvState = {};   // q -> {rows, loading, error}
 var currentSec = "movies";
 
@@ -477,12 +491,17 @@ function loadSearch(q) {
     });
 }
 
-function loadIA(page) {
-  var st = state.ia;
+function loadIA(sec, page) {
+  var def = SECTIONS[sec];
+  var st = iaState[sec];
+  if (!st) st = iaState[sec] = { page: 1, rows: null, pages: null, total: null, loading: false, error: null };
   st.loading = true; st.error = null;
-  if (currentSec === "free") renderCurrent();
+  if (currentSec === sec) renderCurrent();
+  var q = "collection:(" + def.coll + ")";
+  if (def.subj) q += " AND subject:(" + def.subj + ")";
+  q += " AND mediatype:(" + (def.mt || "movies") + ")";
   var url = "https://archive.org/advancedsearch.php?q=" +
-    encodeURIComponent('collection:(feature_films) AND mediatype:(movies)') +
+    encodeURIComponent(q) +
     "&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=year&fl%5B%5D=downloads&rows=50&page=" + page +
     "&sort%5B%5D=addeddate+desc&output=json";
   fetchJSON(url, 15000)
@@ -506,11 +525,11 @@ function loadIA(page) {
       st.page = page;
       st.pages = st.total ? Math.ceil(st.total / 50) : null;
       st.loading = false;
-      if (currentSec === "free") renderCurrent();
+      if (currentSec === sec) renderCurrent();
     })
     .catch(function (e) {
       st.loading = false; st.error = e.message || String(e);
-      if (currentSec === "free") renderCurrent();
+      if (currentSec === sec) renderCurrent();
     });
 }
 
@@ -564,7 +583,7 @@ function feedsLoading() { return state.movies.loading || state.tv.loading; }
 function secState(sec) {
   var def = SECTIONS[sec];
   if (def.type === "feed") return state[sec];
-  if (def.type === "ia") return state.ia;
+  if (def.type === "ia") return iaState[sec] || { rows: null, loading: false, error: null };
   if (def.type === "search") return state.search;
   if (def.type === "csv") return csvState[def.q] || { rows: null, loading: false, error: null };
   return null;
@@ -572,7 +591,7 @@ function secState(sec) {
 function visibleRows(sec) {
   var def = SECTIONS[sec];
   if (def.type === "computed") return computedRows(sec);
-  if (def.type === "ia") return (state.ia.rows || []);
+  if (def.type === "ia") { var s = iaState[sec]; return (s && s.rows) || []; }
   if (def.type === "movies") {
     var q = document.getElementById("qualitySelM").value;
     var ms = Number(document.getElementById("minSeedsM").value) || 0;
@@ -695,7 +714,7 @@ function renderCurrent() {
 
   if (sec === "movies") meta.textContent = rows.length + " torrent files · page " + state.movies.page + (state.movies.total ? " of ~" + state.movies.total + " movies" : "");
   else if (sec === "tv") meta.textContent = rows.length + " releases · page " + state.tv.page + (state.tv.total ? " · " + Number(state.tv.total).toLocaleString() + " indexed" : "");
-  else if (sec === "free") meta.textContent = rows.length + " films · page " + state.ia.page + (state.ia.total ? " of ~" + Number(state.ia.total).toLocaleString() : "") + " · instant playback";
+  else if (def.type === "ia") meta.textContent = rows.length + " items · page " + st.page + (st.total ? " of ~" + Number(st.total).toLocaleString() : "") + " · instant playback";
   else if (sec === "search") meta.textContent = state.search.q ? rows.length + " results for “" + state.search.q + "”" : "";
   else if (sec === "trending") meta.textContent = "Top " + rows.length + " most-seeded among the latest movie & TV releases";
   else if (sec === "top100") meta.textContent = "Top " + rows.length + " by seeders across the latest movie & TV feeds";
@@ -710,7 +729,7 @@ function renderCurrent() {
     list.appendChild(renderRow(rows[i], sec));
   }
 
-  if (sec === "movies" || sec === "tv" || sec === "free") renderPager(sec);
+  if (sec === "movies" || sec === "tv" || def.type === "ia") renderPager(sec);
 }
 
 function loadSection(sec, force) {
@@ -718,7 +737,8 @@ function loadSection(sec, force) {
   if (def.type === "feed") {
     if (sec === "movies") loadMovies(state.movies.page); else loadTV(state.tv.page);
   } else if (def.type === "ia") {
-    loadIA(state.ia.page);
+    var s = iaState[sec];
+    loadIA(sec, (s && s.page) || 1);
   } else if (def.type === "csv") {
     if (force) delete csvState[def.q];
     loadCsv(sec);
@@ -801,7 +821,8 @@ function renderRow(r, sec) {
 }
 
 function renderPager(sec) {
-  var st = (sec === "free") ? state.ia : state[sec];
+  var def = SECTIONS[sec];
+  var st = secState(sec);
   var pager = document.getElementById("secPager");
   var prev = el("button", "btn", "← Prev");
   prev.disabled = st.page <= 1;
@@ -809,7 +830,7 @@ function renderPager(sec) {
     if (playerSection === sec) closePlayer();
     if (sec === "movies") loadMovies(st.page - 1);
     else if (sec === "tv") loadTV(st.page - 1);
-    else loadIA(st.page - 1);
+    else loadIA(sec, st.page - 1);
   });
   var next = el("button", "btn", "Next →");
   if (st.pages && st.page >= st.pages) next.disabled = true;
@@ -817,7 +838,7 @@ function renderPager(sec) {
     if (playerSection === sec) closePlayer();
     if (sec === "movies") loadMovies(st.page + 1);
     else if (sec === "tv") loadTV(st.page + 1);
-    else loadIA(st.page + 1);
+    else loadIA(sec, st.page + 1);
   });
   pager.appendChild(prev);
   pager.appendChild(el("span", "", "Page " + st.page));
@@ -1221,7 +1242,10 @@ document.querySelectorAll(".nav-item").forEach(function (n) {
     var def = SECTIONS[sec];
     if (playerCard && playerSection !== sec) closePlayer();
     if (def.type === "csv") loadCsv(sec);      // lazy-load, no-op if cached
-    if (def.type === "ia" && !state.ia.rows && !state.ia.loading) loadIA(1);
+    if (def.type === "ia") {
+      var s = iaState[sec];
+      if (!s || (!s.rows && !s.loading)) loadIA(sec, 1);
+    }
     showSection(sec);
   });
 });
