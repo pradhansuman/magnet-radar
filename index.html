@@ -19,14 +19,13 @@
   header{
     position:sticky; top:0; z-index:10; background:rgba(11,15,20,.92);
     backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
-    padding:14px 20px 0;
+    padding:14px 20px;
   }
   .head-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap; max-width:1100px; margin:0 auto;}
   .logo{font-size:20px; font-weight:800; letter-spacing:.3px; display:flex; align-items:center; gap:8px;}
-  .logo .magnet{filter:hue-rotate(40deg);}
   .logo em{color:var(--accent); font-style:normal;}
   .spacer{flex:1;}
-  .head-actions{display:flex; align-items:center; gap:10px; padding-bottom:12px;}
+  .head-actions{display:flex; align-items:center; gap:10px;}
   .switch{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); cursor:pointer; user-select:none;}
   .switch input{accent-color:var(--accent); width:15px; height:15px; cursor:pointer;}
   .btn{
@@ -41,15 +40,13 @@
   .btn:disabled:hover{border-color:var(--line); color:var(--text);}
   .btn.primary:disabled:hover{color:#04241c;}
 
-  nav.tabs{display:flex; gap:4px; max-width:1100px; margin:0 auto;}
-  .tab{
-    padding:9px 16px; font-size:14px; font-weight:600; color:var(--muted);
-    border-bottom:2px solid transparent; cursor:pointer; user-select:none;
-  }
-  .tab:hover{color:var(--text);}
-  .tab.active{color:var(--accent); border-bottom-color:var(--accent);}
-
-  main{max-width:1100px; margin:0 auto; padding:18px 20px;}
+  main{max-width:1100px; margin:0 auto; padding:22px 20px;}
+  section.block{margin-bottom:38px;}
+  .sec-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:4px;}
+  .sec-head h2{font-size:17px; font-weight:800; letter-spacing:.2px;}
+  .sec-head h2 .ic{margin-right:4px;}
+  .sec-sub{font-size:12px; color:var(--muted);}
+  .sec-meta{font-size:12.5px; color:var(--muted); margin:6px 0 12px; min-height:16px;}
   .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;}
   .toolbar select, .toolbar input[type=text]{
     background:var(--panel); border:1px solid var(--line); color:var(--text);
@@ -59,20 +56,21 @@
   .toolbar input[type=text]:focus{border-color:var(--accent);}
   .toolbar label{font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:6px;}
   .toolbar select{cursor:pointer;}
-
-  .meta-line{font-size:12.5px; color:var(--muted); margin-bottom:12px; display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
+  .toolbar input[type=number]{
+    width:64px; background:var(--panel); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:8px 10px; font-size:13px; outline:none;
+  }
 
   .list{display:flex; flex-direction:column; gap:8px;}
   .row{
     background:var(--panel); border:1px solid var(--line); border-radius:10px;
     padding:12px 14px; display:grid; grid-template-columns:1fr auto; gap:6px 16px;
-    transition:border-color .15s ease;
+    transition:border-color .15s ease; cursor:pointer;
   }
-  .row:hover{border-color:#2c3d4f;}
+  .row:hover{border-color:var(--accent);}
+  .row.playing{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset;}
   .row .title{font-size:14.5px; font-weight:600; line-height:1.35; word-break:break-word;}
-  .row .title a{color:var(--text);}
-  .row .title a:hover{color:var(--accent); text-decoration:none;}
-  .row .actions{display:flex; gap:8px; align-items:flex-start;}
+  .row .actions{display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap;}
   .row .meta{grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:6px;}
   .chip{
     font-size:11.5px; padding:3px 8px; border-radius:20px; background:var(--chip);
@@ -82,11 +80,11 @@
   .chip.leech{color:#fca5a5;}
   .chip.q{color:#facc15; font-weight:700;}
   .chip.imdb{color:#93c5fd;}
-
   .btn.mini{padding:5px 10px; font-size:12px; border-radius:7px;}
+  a.btn.mini:hover{text-decoration:none;}
 
   .empty,.error,.loading{
-    border:1px dashed var(--line); border-radius:12px; padding:34px 20px;
+    border:1px dashed var(--line); border-radius:12px; padding:30px 20px;
     text-align:center; color:var(--muted); font-size:14px; background:var(--panel);
   }
   .error{border-color:rgba(248,113,113,.4); color:#f3b4b4;}
@@ -97,11 +95,42 @@
   }
   @keyframes spin{to{transform:rotate(360deg);}}
 
-  .pager{display:flex; gap:10px; justify-content:center; align-items:center; margin-top:16px; font-size:13px; color:var(--muted);}
+  .pager{display:flex; gap:10px; justify-content:center; align-items:center; margin-top:14px; font-size:13px; color:var(--muted);}
 
-  footer{
-    max-width:1100px; margin:26px auto 0; padding:0 20px; font-size:12px; color:var(--muted); line-height:1.6;
+  /* ---- inline player card ---- */
+  .iplayer{
+    background:var(--panel); border:1px solid var(--accent); border-radius:12px;
+    padding:14px 16px 16px; margin:2px 0 6px;
+    box-shadow:0 10px 40px rgba(0,0,0,.45);
   }
+  .ip-head{display:flex; align-items:center; gap:12px; margin-bottom:8px;}
+  .ip-title{font-size:13.5px; font-weight:700; flex:1; word-break:break-word; color:var(--accent);}
+  .ip-status{font-size:12.5px; color:var(--accent); margin-bottom:8px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .ip-status.busy{color:#e8c268;}
+  .ip-note{font-size:12.5px; color:#e8c268; background:rgba(232,194,104,.08); border:1px solid rgba(232,194,104,.35); border-radius:8px; padding:8px 10px; margin-bottom:8px; line-height:1.5;}
+  .ip-video{background:#000; border-radius:10px; min-height:180px; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:10px;}
+  .ip-video video{width:100%; max-height:58vh; outline:none; border-radius:10px; background:#000;}
+  .ip-video .vplaceholder{color:#5b6a78; font-size:13px; padding:34px 16px; text-align:center; line-height:1.6;}
+  .ip-controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;}
+  .ip-controls label{font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:6px;}
+  .ip-controls select{background:var(--panel2); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 8px; font-size:12.5px; max-width:340px;}
+  .ip-files{display:flex; flex-direction:column; gap:6px; margin-bottom:10px;}
+  .frow{display:grid; grid-template-columns:auto 1fr auto 110px auto; gap:10px; align-items:center; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:7px 10px;}
+  .frow .fic{font-size:14px;}
+  .frow .fname{font-size:12.5px; word-break:break-all; line-height:1.35;}
+  .frow .fsz{font-size:11.5px; color:var(--muted); white-space:nowrap;}
+  .fbar{height:6px; background:#0d1319; border-radius:4px; overflow:hidden; border:1px solid var(--line);}
+  .fbar i{display:block; height:100%; background:var(--accent); width:0%; transition:width .4s ease;}
+  .ip-hint{font-size:11.5px; color:var(--muted); line-height:1.55;}
+
+  .samples{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; justify-content:center;}
+  .samples button{
+    background:var(--chip); border:1px solid var(--line); color:var(--muted);
+    font-size:12px; border-radius:20px; padding:4px 12px; cursor:pointer;
+  }
+  .samples button:hover{color:var(--accent); border-color:var(--accent);}
+
+  footer{max-width:1100px; margin:10px auto 0; padding:0 20px; font-size:12px; color:var(--muted); line-height:1.6;}
   footer .warn{color:#e8c268;}
 
   #toast{
@@ -111,141 +140,107 @@
     transition:all .25s ease; z-index:50; max-width:80vw; text-align:center;
   }
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
-  .samples{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
-  .samples button{
-    background:var(--chip); border:1px solid var(--line); color:var(--muted);
-    font-size:12px; border-radius:20px; padding:4px 12px; cursor:pointer;
-  }
-  .samples button:hover{color:var(--accent); border-color:var(--accent);}
 
   @media (max-width:640px){
     .row{grid-template-columns:1fr;}
     .row .actions{justify-content:flex-start;}
+    .frow{grid-template-columns:auto 1fr auto; }
+    .frow .fbar{display:none;}
   }
-
-  /* ---- player modal ---- */
-  .modal-overlay{
-    position:fixed; inset:0; background:rgba(4,7,10,.78); z-index:40;
-    display:flex; align-items:center; justify-content:center; padding:18px;
-  }
-  .modal{
-    background:var(--panel); border:1px solid var(--line); border-radius:14px;
-    width:min(920px, 96vw); max-height:94vh; overflow:auto; padding:16px 18px 18px;
-    box-shadow:0 18px 60px rgba(0,0,0,.55);
-  }
-  .modal-head{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
-  .modal-title{font-size:15px; font-weight:700; flex:1; word-break:break-word;}
-  .pl-status{font-size:12.5px; color:var(--accent); margin-bottom:8px; font-weight:600; font-variant-numeric:tabular-nums;}
-  .pl-status.busy{color:#e8c268;}
-  .pl-note{font-size:12.5px; color:#e8c268; background:rgba(232,194,104,.08); border:1px solid rgba(232,194,104,.35); border-radius:8px; padding:8px 10px; margin-bottom:8px; line-height:1.5;}
-  .video-wrap{background:#000; border-radius:10px; min-height:220px; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:10px;}
-  .video-wrap video{width:100%; max-height:62vh; outline:none; border-radius:10px; background:#000;}
-  .video-wrap .vplaceholder{color:#5b6a78; font-size:13px; padding:40px 16px; text-align:center; line-height:1.6;}
-  .pl-controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;}
-  .pl-controls label{font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:6px;}
-  .pl-controls select{background:var(--panel2); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 8px; font-size:12.5px; max-width:340px;}
-  .pl-files{display:flex; flex-direction:column; gap:6px; margin-bottom:10px;}
-  .frow{display:grid; grid-template-columns:auto 1fr auto 110px auto; gap:10px; align-items:center; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:7px 10px;}
-  .frow .fic{font-size:14px;}
-  .frow .fname{font-size:12.5px; word-break:break-all; line-height:1.35;}
-  .frow .fsz{font-size:11.5px; color:var(--muted); white-space:nowrap;}
-  .fbar{height:6px; background:#0d1319; border-radius:4px; overflow:hidden; border:1px solid var(--line);}
-  .fbar i{display:block; height:100%; background:var(--accent); width:0%; transition:width .4s ease;}
-  .pl-hint{font-size:11.5px; color:var(--muted); line-height:1.55;}
 </style>
 </head>
 <body>
 
 <header>
   <div class="head-row">
-    <div class="logo"><span class="magnet">🧲</span> Magnet<em>Radar</em></div>
+    <div class="logo">🧲 Magnet<em>Radar</em></div>
+    <div class="sec-sub">click any torrent to stream it right here</div>
     <div class="spacer"></div>
     <div class="head-actions">
-      <label class="switch" title="Re-fetch the latest list every 60 seconds">
+      <label class="switch" title="Re-fetch the latest lists every 60 seconds">
         <input type="checkbox" id="autoRefresh"> Auto-refresh 60s
       </label>
-      <button class="btn" id="copyAllBtn">⧉ Copy all magnets</button>
-      <button class="btn primary" id="refreshBtn">↻ Refresh</button>
+      <button class="btn primary" id="refreshBtn">↻ Refresh all</button>
     </div>
   </div>
-  <nav class="tabs">
-    <div class="tab active" data-tab="movies">🎬 Movies</div>
-    <div class="tab" data-tab="tv">📺 TV Shows</div>
-    <div class="tab" data-tab="search">🔍 Search All</div>
-  </nav>
 </header>
 
 <main>
-  <div class="toolbar" id="toolbarMovies">
-    <label>Quality
-      <select id="qualitySel">
-        <option value="all" selected>All</option>
-        <option value="2160p">2160p</option>
-        <option value="1080p">1080p</option>
-        <option value="720p">720p</option>
-      </select>
-    </label>
-    <label>Sort
-      <select id="sortSel">
-        <option value="new">Newest first</option>
-        <option value="seed">Most seeded</option>
-        <option value="size">Largest</option>
-      </select>
-    </label>
-    <label>Min seeds
-      <input type="number" id="minSeeds" min="0" value="0" style="width:64px; background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:8px 10px; font-size:13px; outline:none;">
-    </label>
-  </div>
+  <!-- ============ MOVIES ============ -->
+  <section class="block" id="sec-movies">
+    <div class="sec-head">
+      <h2><span class="ic">🎬</span>Latest Movies</h2>
+      <span class="sec-sub">YTS · newest additions</span>
+    </div>
+    <div class="sec-meta" id="moviesMeta"></div>
+    <div class="toolbar">
+      <label>Quality
+        <select id="qualitySelM">
+          <option value="all" selected>All</option>
+          <option value="2160p">2160p</option>
+          <option value="1080p">1080p</option>
+          <option value="720p">720p</option>
+        </select>
+      </label>
+      <label>Sort
+        <select id="sortSelM">
+          <option value="new">Newest first</option>
+          <option value="seed">Most seeded</option>
+          <option value="size">Largest</option>
+        </select>
+      </label>
+      <label>Min seeds <input type="number" id="minSeedsM" min="0" value="0"></label>
+      <span class="spacer"></span>
+      <button class="btn" id="copyAllM">⧉ Copy all magnets</button>
+    </div>
+    <div class="list" id="moviesList"></div>
+    <div class="pager" id="moviesPager"></div>
+  </section>
 
-  <div class="toolbar" id="toolbarTV" style="display:none;">
-    <label>Sort
-      <select id="sortSelTV">
-        <option value="new">Newest first</option>
-        <option value="seed">Most seeded</option>
-        <option value="size">Largest</option>
-      </select>
-    </label>
-    <label>Min seeds
-      <input type="number" id="minSeedsTV" min="0" value="0" style="width:64px; background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:8px 10px; font-size:13px; outline:none;">
-    </label>
-  </div>
+  <!-- ============ TV ============ -->
+  <section class="block" id="sec-tv">
+    <div class="sec-head">
+      <h2><span class="ic">📺</span>Latest TV Episodes</h2>
+      <span class="sec-sub">EZTV · newest releases</span>
+    </div>
+    <div class="sec-meta" id="tvMeta"></div>
+    <div class="toolbar">
+      <label>Sort
+        <select id="sortSelT">
+          <option value="new">Newest first</option>
+          <option value="seed">Most seeded</option>
+          <option value="size">Largest</option>
+        </select>
+      </label>
+      <label>Min seeds <input type="number" id="minSeedsT" min="0" value="0"></label>
+      <span class="spacer"></span>
+      <button class="btn" id="copyAllT">⧉ Copy all magnets</button>
+    </div>
+    <div class="list" id="tvList"></div>
+    <div class="pager" id="tvPager"></div>
+  </section>
 
-  <div class="toolbar" id="toolbarSearch" style="display:none;">
-    <input type="text" id="searchInput" placeholder="Search torrents… e.g. ubuntu, debian, big buck bunny" autocomplete="off">
-    <button class="btn primary" id="searchBtn">Search</button>
-  </div>
-
-  <div class="meta-line" id="metaLine"></div>
-  <div class="list" id="list"></div>
-  <div class="pager" id="pager"></div>
+  <!-- ============ SEARCH ============ -->
+  <section class="block" id="sec-search">
+    <div class="sec-head">
+      <h2><span class="ic">🔍</span>Search All Categories</h2>
+      <span class="sec-sub">Torrents-CSV · movies, TV, apps, games, books</span>
+    </div>
+    <div class="sec-meta" id="searchMeta"></div>
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="Search torrents… e.g. ubuntu, debian, big buck bunny" autocomplete="off">
+      <button class="btn primary" id="searchBtn">Search</button>
+    </div>
+    <div class="list" id="searchList"></div>
+  </section>
 </main>
 
 <footer>
-  <div>Sources: <a href="https://yts.mx/api" target="_blank" rel="noopener">YTS API</a> (movies) · <a href="https://github.com/eztv-eu/EZTV" target="_blank" rel="noopener">EZTV API</a> (TV) · <a href="https://torrents-csv.com" target="_blank" rel="noopener">Torrents-CSV</a> (search). Everything runs in your browser; nothing is proxied or logged. The WebTorrent streaming engine is loaded on demand from jsDelivr.</div>
+  <div>Sources: <a href="https://yts.mx/api" target="_blank" rel="noopener">YTS API</a> (movies) · <a href="https://eztvx.to/" target="_blank" rel="noopener">EZTV API</a> (TV) · <a href="https://torrents-csv.com" target="_blank" rel="noopener">Torrents-CSV</a> (search). Everything runs in your browser; nothing is proxied or logged. The WebTorrent streaming engine is loaded on demand from jsDelivr.</div>
   <div class="warn">⚠ Share only what's legal to share: public-domain and open-source releases, Creative-Commons media, and your own files. Respect the law where you live.</div>
 </footer>
 
 <div id="toast"></div>
-
-<div class="modal-overlay" id="playerModal" style="display:none;">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="plTitle"></div>
-      <button class="btn mini" id="plClose">✕ Close</button>
-    </div>
-    <div class="pl-status busy" id="plStatus">Loading…</div>
-    <div class="pl-note" id="plNote" style="display:none;"></div>
-    <div class="video-wrap" id="videoWrap">
-      <div class="vplaceholder" id="vPlaceholder">Choose ▶ Play on any torrent to stream it here.<br>MP4/WebM play instantly; other formats need full download first.</div>
-    </div>
-    <div class="pl-controls" id="plControls" style="display:none;">
-      <label>File <select id="plFileSel"></select></label>
-      <button class="btn mini" id="plSaveTorrent" disabled>⤓ Save .torrent</button>
-    </div>
-    <div class="pl-files" id="plFiles"></div>
-    <div class="pl-hint">Streaming uses the WebTorrent engine (WebRTC peers + webseeds). If no peers appear, this swarm has no browser peers — use ⤓ Open to download with qBittorrent/WebTorrent Desktop instead. Only stream content you're allowed to access.</div>
-  </div>
-</div>
 
 <script>
 "use strict";
@@ -283,7 +278,7 @@ function fmtSize(bytes) {
   return (u === 0 ? n : n.toFixed(n >= 100 ? 0 : n >= 10 ? 1 : 2)) + " " + units[u];
 }
 
-function parseSizeStr(s) { // "1.85 GB" -> bytes (approx)
+function parseSizeStr(s) {
   if (!s || typeof s !== "string") return 0;
   var m = s.match(/([\d.]+)\s*(B|KB|MB|GB|TB)/i);
   if (!m) return 0;
@@ -305,14 +300,13 @@ function fmtAge(unix) {
   return Math.floor(s / (86400 * 365)) + "y ago";
 }
 
-function ytsDateToUnix(s) { // "2026-09-03 10:20:03" (UTC) -> unix
+function ytsDateToUnix(s) {
   if (!s) return 0;
   var d = new Date(s.replace(" ", "T") + "Z");
   return isNaN(d.getTime()) ? 0 : Math.floor(d.getTime() / 1000);
 }
 
 var state = {
-  tab: "movies",
   movies: { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   tv:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   search: { q: "", rows: null, loading: false, error: null }
@@ -349,8 +343,8 @@ function ytsFetch(path) {
 
 function loadMovies(page) {
   var st = state.movies;
-  st.loading = true; st.error = null; render();
-  ytsFetch("/api/v2/list_movies.json?limit=50&page=" + page + "&sort_by=date_added&order_by=desc&with_cast=0")
+  st.loading = true; st.error = null; renderSection("movies");
+  ytsFetch("/api/v2/list_movies.json?limit=50&page=" + page + "&sort_by=date_added&order_by=desc")
     .then(function (j) {
       var data = j && j.data || {};
       var movies = data.movies || [];
@@ -362,11 +356,9 @@ function loadMovies(page) {
           var t = ts[k];
           rows.push({
             title: mv.title_long || mv.title,
-            href: mv.url || ("https://www.imdb.com/title/" + (mv.imdb_code || "")),
             imdb: mv.imdb_code || null,
             rating: mv.rating,
             quality: t.quality,
-            type: t.type || "movie",
             torrentUrl: t.url || null,
             sizeStr: t.size,
             sizeB: parseSizeStr(t.size),
@@ -378,20 +370,19 @@ function loadMovies(page) {
         }
       }
       rows.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
-      st.rows = rows;
-      st.page = page;
+      st.rows = rows; st.page = page;
       st.total = data.movie_count || null;
-      st.pages = Math.min(100, Math.ceil((st.total || 5000) / 50) || null); // API caps page at 50
-      st.loading = false; render();
+      st.pages = Math.min(50, Math.ceil((st.total || 5000) / 50) || null);
+      st.loading = false; renderSection("movies");
     })
     .catch(function (e) {
-      st.loading = false; st.error = e.message || String(e); render();
+      st.loading = false; st.error = e.message || String(e); renderSection("movies");
     });
 }
 
 function loadTV(page) {
   var st = state.tv;
-  st.loading = true; st.error = null; render();
+  st.loading = true; st.error = null; renderSection("tv");
   fetchJSON("https://eztvx.to/api/get-torrents?limit=50&page=" + page, 14000)
     .then(function (j) {
       var ts = j && j.torrents || [];
@@ -399,7 +390,6 @@ function loadTV(page) {
         var sxx = (t.season && t.episode) ? "S" + String(t.season).padStart(2, "0") + "E" + String(t.episode).padStart(2, "0") : null;
         return {
           title: t.filename || t.title,
-          href: (t.imdb_id && Number(t.imdb_id) > 0) ? "https://www.imdb.com/title/tt" + t.imdb_id + "/" : null,
           imdb: (t.imdb_id && Number(t.imdb_id) > 0) ? "tt" + t.imdb_id : null,
           sxx: sxx,
           quality: null,
@@ -412,27 +402,25 @@ function loadTV(page) {
         };
       });
       rows.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
-      st.rows = rows;
-      st.page = page;
+      st.rows = rows; st.page = page;
       st.total = j && j.torrents_count || null;
-      st.pages = null; // large; allow free navigation
-      st.loading = false; render();
+      st.pages = null;
+      st.loading = false; renderSection("tv");
     })
     .catch(function (e) {
-      st.loading = false; st.error = e.message || String(e); render();
+      st.loading = false; st.error = e.message || String(e); renderSection("tv");
     });
 }
 
 function loadSearch(q) {
   var st = state.search;
-  st.loading = true; st.error = null; render();
+  st.loading = true; st.error = null; renderSection("search");
   fetchJSON("https://torrents-csv.com/service/search?q=" + encodeURIComponent(q) + "&size=100", 14000)
     .then(function (j) {
       var ts = j && j.torrents || [];
       var rows = ts.map(function (t) {
         return {
           title: t.name,
-          href: null,
           quality: null,
           sizeStr: fmtSize(t.size_bytes),
           sizeB: Number(t.size_bytes) || 0,
@@ -443,40 +431,35 @@ function loadSearch(q) {
           magnet: buildMagnet(t.infohash, t.name)
         };
       });
-      st.rows = rows;
-      st.q = q;
-      st.loading = false; render();
+      st.rows = rows; st.q = q;
+      st.loading = false; renderSection("search");
     })
     .catch(function (e) {
-      st.loading = false; st.error = e.message || String(e); render();
+      st.loading = false; st.error = e.message || String(e); renderSection("search");
     });
 }
 
-/* ---------------- filtering & render ---------------- */
+/* ---------------- filtering & rendering ---------------- */
 
-function currentSortedRows() {
-  var tab = state.tab, rows;
-  var sortSel = tab === "movies" ? document.getElementById("sortSel").value
-              : tab === "tv" ? document.getElementById("sortSelTV").value
-              : "seed";
-  var minSeeds = tab === "movies" ? (Number(document.getElementById("minSeeds").value) || 0)
-               : tab === "tv" ? (Number(document.getElementById("minSeedsTV").value) || 0)
-               : 0;
-
-  if (tab === "movies") {
-    var q = document.getElementById("qualitySel").value;
-    rows = (state.movies.rows || []).filter(function (r) {
-      return (q === "all" || r.quality === q) && r.seeds >= minSeeds;
+function sortedRows(sec) {
+  var st = state[sec], rows;
+  if (sec === "movies") {
+    var q = document.getElementById("qualitySelM").value;
+    var ms = Number(document.getElementById("minSeedsM").value) || 0;
+    rows = (st.rows || []).filter(function (r) {
+      return (q === "all" || r.quality === q) && r.seeds >= ms;
     });
-  } else if (tab === "tv") {
-    rows = (state.tv.rows || []).filter(function (r) { return r.seeds >= minSeeds; });
+  } else if (sec === "tv") {
+    var ms2 = Number(document.getElementById("minSeedsT").value) || 0;
+    rows = (st.rows || []).filter(function (r) { return r.seeds >= ms2; });
   } else {
-    rows = (state.search.rows || []);
+    rows = (st.rows || []).slice();
   }
-
+  var sort = sec === "movies" ? document.getElementById("sortSelM").value
+           : sec === "tv" ? document.getElementById("sortSelT").value : "seed";
   rows = rows.slice();
-  if (sortSel === "seed") rows.sort(function (a, b) { return b.seeds - a.seeds || (b.dateUnix - a.dateUnix); });
-  else if (sortSel === "size") rows.sort(function (a, b) { return b.sizeB - a.sizeB; });
+  if (sort === "seed") rows.sort(function (a, b) { return b.seeds - a.seeds || b.dateUnix - a.dateUnix; });
+  else if (sort === "size") rows.sort(function (a, b) { return b.sizeB - a.sizeB; });
   else rows.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
   return rows;
 }
@@ -488,32 +471,21 @@ function el(tag, cls, text) {
   return e;
 }
 
-function render() {
-  var tab = state.tab;
-  document.querySelectorAll(".tab").forEach(function (t) {
-    t.classList.toggle("active", t.getAttribute("data-tab") === tab);
-  });
-  document.getElementById("toolbarMovies").style.display = tab === "movies" ? "flex" : "none";
-  document.getElementById("toolbarTV").style.display = tab === "tv" ? "flex" : "none";
-  document.getElementById("toolbarSearch").style.display = tab === "search" ? "flex" : "none";
-
-  var list = document.getElementById("list");
-  var meta = document.getElementById("metaLine");
-  var pager = document.getElementById("pager");
-  pager.innerHTML = "";
+function renderSection(sec) {
+  var st = state[sec];
+  var list = document.getElementById(sec + "List");
+  var meta = document.getElementById(sec + "Meta");
+  var pager = document.getElementById(sec + "Pager");
+  if (pager) pager.innerHTML = "";
   list.innerHTML = "";
-  document.getElementById("copyAllBtn").disabled = true;
-  document.getElementById("autoRefresh").disabled = (tab === "search");
-
-  var st = state[tab];
+  meta.textContent = "";
 
   if (st.loading) {
-    list.appendChild(el("div", "loading"));
-    var lk = list.lastChild;
-    lk.appendChild(el("div"));
-    lk.firstChild.appendChild(document.createElement("span")).className = "spinner";
-    lk.firstChild.appendChild(el("div", "", "Fetching latest torrents…"));
-    meta.textContent = "";
+    var lk = el("div", "loading");
+    var box = el("div");
+    var sp = document.createElement("span"); sp.className = "spinner"; box.appendChild(sp);
+    box.appendChild(el("div", "", "Fetching latest torrents…"));
+    lk.appendChild(box); list.appendChild(lk);
     return;
   }
   if (st.error) {
@@ -521,17 +493,18 @@ function render() {
     ec.appendChild(el("div", "", "⚠ " + st.error));
     var rb = el("button", "btn", "Retry");
     rb.style.marginTop = "12px";
-    rb.addEventListener("click", refreshCurrent);
-    ec.appendChild(rb);
-    list.appendChild(ec);
-    meta.textContent = "";
+    rb.addEventListener("click", function () {
+      if (sec === "movies") loadMovies(state.movies.page);
+      else if (sec === "tv") loadTV(state.tv.page);
+      else if (state.search.q) loadSearch(state.search.q);
+    });
+    ec.appendChild(rb); list.appendChild(ec);
     return;
   }
   if (!st.rows) {
-    // initial / search-empty state
-    var ec2 = el("div", "empty");
-    if (tab === "search") {
-      ec2.appendChild(el("div", "", "Search a query to find torrents across all categories."));
+    if (sec === "search") {
+      var ec2 = el("div", "empty");
+      ec2.appendChild(el("div", "", "Search to find torrents across all categories."));
       var samples = el("div", "samples");
       ["ubuntu", "debian", "big buck bunny", "blender", "linux iso"].forEach(function (s) {
         var b = el("button", "", s);
@@ -541,65 +514,49 @@ function render() {
         });
         samples.appendChild(b);
       });
-      ec2.appendChild(samples);
+      ec2.appendChild(samples); list.appendChild(ec2);
     } else {
-      ec2.textContent = "Nothing loaded yet — press Refresh.";
+      list.appendChild(el("div", "empty", "Nothing loaded yet — press Refresh all."));
     }
-    list.appendChild(ec2);
-    meta.textContent = "";
     return;
   }
 
-  var rows = currentSortedRows();
+  var rows = sortedRows(sec);
 
-  // meta line
-  var bits = [];
-  if (tab === "movies") bits.push(rows.length + " torrent files · page " + state.movies.page + (state.movies.total ? " of ~" + state.movies.total + " movies" : "") + " · YTS");
-  if (tab === "tv") bits.push(rows.length + " releases · page " + state.tv.page + (state.tv.total ? " · " + Number(state.tv.total).toLocaleString() + " indexed" : "") + " · EZTV");
-  if (tab === "search") bits.push(rows.length + " results for “" + state.search.q + "” · Torrents-CSV");
-  meta.textContent = bits.join("");
+  if (sec === "movies") meta.textContent = rows.length + " torrent files · page " + st.page + (st.total ? " of ~" + st.total + " movies" : "");
+  if (sec === "tv") meta.textContent = rows.length + " releases · page " + st.page + (st.total ? " · " + Number(st.total).toLocaleString() + " indexed" : "");
+  if (sec === "search") meta.textContent = st.q ? rows.length + " results for “" + st.q + "”" : "";
 
   if (rows.length === 0) {
     list.appendChild(el("div", "empty", "No torrents match the current filters."));
-    renderPager();
     return;
   }
 
   for (var i = 0; i < rows.length; i++) {
-    list.appendChild(renderRow(rows[i]));
+    list.appendChild(renderRow(rows[i], sec));
   }
 
-  document.getElementById("copyAllBtn").disabled = rows.length === 0;
-  renderPager();
+  if (pager && (sec === "movies" || sec === "tv")) renderPager(sec);
 }
 
-function renderRow(r) {
+function renderRow(r, sec) {
   var row = el("div", "row");
+  if (playerRow === r) row.classList.add("playing");
 
-  var title = el("div", "title");
-  if (r.href) {
-    var a = document.createElement("a");
-    a.href = r.href; a.target = "_blank"; a.rel = "noopener";
-    a.textContent = r.title;
-    title.appendChild(a);
-  } else {
-    title.textContent = r.title;
-  }
+  var title = el("div", "title", r.title);
   row.appendChild(title);
 
   var actions = el("div", "actions");
-  var copyBtn = el("button", "btn mini", "⧉ Copy magnet");
-  copyBtn.addEventListener("click", function () { copyText(r.magnet, "Magnet copied to clipboard"); });
   var playBtn = el("button", "btn mini", "▶ Play");
-  playBtn.title = "Stream in browser (WebTorrent)";
-  playBtn.addEventListener("click", function () { openPlayer(r); });
-  var openBtn = el("button", "btn mini primary", "⤓ Open");
-  openBtn.title = "Open with your default torrent client";
-  openBtn.addEventListener("click", function () {
-    var l = document.createElement("a");
-    l.href = r.magnet; document.body.appendChild(l); l.click(); l.remove();
-  });
+  playBtn.title = "Stream right here — no navigation";
+  playBtn.addEventListener("click", function (e) { e.stopPropagation(); togglePlay(r, row, sec); });
+  actions.appendChild(playBtn);
+
+  var copyBtn = el("button", "btn mini", "⧉ Copy");
+  copyBtn.title = "Copy magnet link";
+  copyBtn.addEventListener("click", function (e) { e.stopPropagation(); copyText(r.magnet, "Magnet copied to clipboard"); });
   actions.appendChild(copyBtn);
+
   if (r.torrentUrl) {
     var tlink = document.createElement("a");
     tlink.className = "btn mini";
@@ -611,6 +568,14 @@ function renderRow(r) {
     tlink.textContent = "⤓ .torrent";
     actions.appendChild(tlink);
   }
+
+  var openBtn = el("button", "btn mini primary", "⤓ Open");
+  openBtn.title = "Open with your default torrent client";
+  openBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    var l = document.createElement("a");
+    l.href = r.magnet; document.body.appendChild(l); l.click(); l.remove();
+  });
   actions.appendChild(openBtn);
   row.appendChild(actions);
 
@@ -624,37 +589,41 @@ function renderRow(r) {
   if (age) meta.appendChild(el("span", "chip", "🕒 " + age));
   if (r.rating) meta.appendChild(el("span", "chip", "★ " + r.rating));
   if (r.completed) meta.appendChild(el("span", "chip", "✔ " + r.completed + " completed"));
-  if (r.imdb) meta.appendChild(el("span", "chip imdb", "IMDb " + r.imdb));
+  if (r.imdb) {
+    var im = document.createElement("a");
+    im.className = "chip imdb";
+    im.href = "https://www.imdb.com/title/" + r.imdb + "/";
+    im.target = "_blank"; im.rel = "noopener";
+    im.textContent = "IMDb " + r.imdb;
+    meta.appendChild(im);
+  }
   row.appendChild(meta);
+
+  row.addEventListener("click", function (e) {
+    if (e.target.closest("button, a, select, input, label")) return;
+    togglePlay(r, row, sec);
+  });
+
+  r._rowEl = row;
   return row;
 }
 
-function renderPager() {
-  var tab = state.tab;
-  if (tab === "search") return;
-  var st = state[tab];
-  var pager = document.getElementById("pager");
+function renderPager(sec) {
+  var st = state[sec];
+  var pager = document.getElementById(sec + "Pager");
   var prev = el("button", "btn", "← Prev");
   prev.disabled = st.page <= 1;
-  prev.addEventListener("click", function () { gotoPage(st.page - 1); });
+  prev.addEventListener("click", function () {
+    if (sec === "movies") loadMovies(st.page - 1); else loadTV(st.page - 1);
+  });
   var next = el("button", "btn", "Next →");
   if (st.pages && st.page >= st.pages) next.disabled = true;
-  next.addEventListener("click", function () { gotoPage(st.page + 1); });
+  next.addEventListener("click", function () {
+    if (sec === "movies") loadMovies(st.page + 1); else loadTV(st.page + 1);
+  });
   pager.appendChild(prev);
   pager.appendChild(el("span", "", "Page " + st.page));
   pager.appendChild(next);
-}
-
-function gotoPage(p) {
-  if (p < 1) return;
-  if (state.tab === "movies") loadMovies(p);
-  else if (state.tab === "tv") loadTV(p);
-}
-
-function refreshCurrent() {
-  if (state.tab === "movies") loadMovies(state.movies.page);
-  else if (state.tab === "tv") loadTV(state.tv.page);
-  else if (state.tab === "search" && state.search.q) loadSearch(state.search.q);
 }
 
 /* ---------------- in-browser streaming player (WebTorrent) ---------------- */
@@ -667,6 +636,9 @@ var currentMedia = null;
 var currentFile = null;
 var ticker = null;
 var playerOpenSince = 0;
+var playerCard = null;
+var playerRow = null;
+var playerSection = null;
 
 function loadEngine() {
   if (window.WebTorrent) return Promise.resolve(window.WebTorrent);
@@ -682,18 +654,6 @@ function loadEngine() {
     document.head.appendChild(s);
   });
   return wtScriptPromise;
-}
-
-function setPlStatus(text, busy) {
-  var s = document.getElementById("plStatus");
-  s.textContent = text;
-  s.classList.toggle("busy", !!busy);
-}
-function setPlNote(text) {
-  var n = document.getElementById("plNote");
-  if (!text) { n.style.display = "none"; return; }
-  n.textContent = text;
-  n.style.display = "block";
 }
 
 function isVideoFile(name) {
@@ -715,58 +675,91 @@ function pickVideoFile(files) {
   return (modern.length ? modern : vids)[0];
 }
 
-function openPlayer(row) {
-  document.getElementById("playerModal").style.display = "flex";
-  document.getElementById("plTitle").textContent = row.title;
-  document.getElementById("videoWrap").innerHTML = '<div class="vplaceholder">Connecting…</div>';
-  document.getElementById("plControls").style.display = "none";
-  document.getElementById("plFiles").innerHTML = "";
-  document.getElementById("plSaveTorrent").disabled = true;
-  setPlNote(null);
-  setPlStatus("Loading WebTorrent engine…", true);
+function togglePlay(r, rowEl, sec) {
+  if (playerCard && playerRow === r) { closePlayer(); return; }
+  openPlayer(r, rowEl, sec);
+}
+
+function openPlayer(r, rowEl, sec) {
+  closePlayer();
+
+  playerCard = el("div", "iplayer");
+  playerCard.innerHTML =
+    '<div class="ip-head"><div class="ip-title"></div><button class="btn mini ip-close">✕ Close</button></div>' +
+    '<div class="ip-status busy">Loading…</div>' +
+    '<div class="ip-note" style="display:none;"></div>' +
+    '<div class="ip-video"><div class="vplaceholder">Connecting to swarm…</div></div>' +
+    '<div class="ip-controls" style="display:none;">' +
+      '<label>File <select class="ip-filesel"></select></label>' +
+      '<button class="btn mini ip-savetorrent" disabled>⤓ Save .torrent</button>' +
+      '<span class="ip-dlhint"></span>' +
+    '</div>' +
+    '<div class="ip-files"></div>' +
+    '<div class="ip-hint">Streaming uses the WebTorrent engine (WebRTC peers + webseeds). If no peers appear, this swarm has no browser peers — use ⤓ Open to download with qBittorrent/WebTorrent Desktop instead. Only stream content you\'re allowed to access.</div>';
+  rowEl.after(playerCard);
+  playerRow = r;
+  playerSection = sec;
+  rowEl.classList.add("playing");
+
+  playerCard.querySelector(".ip-title").textContent = r.title;
+  playerCard.querySelector(".ip-close").addEventListener("click", closePlayer);
+  playerCard.querySelector(".ip-savetorrent").addEventListener("click", saveTorrentFile);
+  playerCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+  setStatus("Loading WebTorrent engine…", true);
   playerOpenSince = Date.now();
 
   loadEngine().then(function (WT) {
+    if (!playerCard) return;
     if (!WT.WEBRTC_SUPPORT) {
-      setPlStatus("WebRTC is not available in this browser.", false);
-      setPlNote("Browser streaming needs WebRTC. Use ⤓ Open with a desktop torrent client instead.");
+      setStatus("WebRTC is not available in this browser.", false);
+      setNote("Browser streaming needs WebRTC. Use ⤓ Open with a desktop torrent client instead.");
       return;
     }
     if (!wtClient) {
       wtClient = new WT();
       wtClient.on("error", function (e) {
-        if (document.getElementById("playerModal").style.display !== "none") {
-          setPlStatus("Engine error", false);
-          setPlNote(String(e && e.message || e));
-        }
+        if (playerCard) { setStatus("Engine error", false); setNote(String(e && e.message || e)); }
       });
     }
-    if (wtTorrent) { try { wtClient.remove(wtTorrent); } catch (e) {} wtTorrent = null; }
-
-    setPlStatus("Connecting to swarm…", true);
-    wtTorrent = wtClient.add(row.magnet, { announce: WSS_TRACKERS }, function (t) {
-      t.on("error", function (e) { setPlStatus("Torrent error", false); setPlNote(String(e && e.message || e)); });
-      t.on("done", function () { renderPlayerFiles(t); });
+    setStatus("Connecting to swarm…", true);
+    wtTorrent = wtClient.add(r.magnet, { announce: WSS_TRACKERS }, function (t) {
+      if (!playerCard) return;
+      t.on("error", function (e) { setStatus("Torrent error", false); setNote(String(e && e.message || e)); });
+      t.on("done", function () { renderFileList(t); });
       buildFileSelector(t);
-      renderPlayerFiles(t);
-      document.getElementById("plSaveTorrent").disabled = false;
+      renderFileList(t);
+      playerCard.querySelector(".ip-savetorrent").disabled = false;
       var f = pickVideoFile(t.files);
       if (f) streamFile(f);
-      else setPlNote("No video file in this torrent — you can still save individual files below.");
+      else setNote("No video file in this torrent — you can still save individual files below.");
     });
-
     if (ticker) clearInterval(ticker);
     ticker = setInterval(tickPlayer, 500);
   }).catch(function (e) {
-    setPlStatus("Engine failed to load", false);
-    setPlNote(e.message);
+    setStatus("Engine failed to load", false);
+    setNote(e.message);
   });
 }
 
+function setStatus(text, busy) {
+  if (!playerCard) return;
+  var s = playerCard.querySelector(".ip-status");
+  s.textContent = text;
+  s.classList.toggle("busy", !!busy);
+}
+function setNote(text) {
+  if (!playerCard) return;
+  var n = playerCard.querySelector(".ip-note");
+  if (!text) { n.style.display = "none"; return; }
+  n.textContent = text;
+  n.style.display = "block";
+}
+
 function buildFileSelector(t) {
-  var sel = document.getElementById("plFileSel");
+  var sel = playerCard.querySelector(".ip-filesel");
   var vids = t.files.filter(function (f) { return isVideoFile(f.name); });
-  if (!vids.length) { document.getElementById("plControls").style.display = "none"; return; }
+  if (!vids.length) { playerCard.querySelector(".ip-controls").style.display = "none"; return; }
   sel.innerHTML = "";
   vids.forEach(function (f) {
     var o = document.createElement("option");
@@ -774,7 +767,8 @@ function buildFileSelector(t) {
     o.textContent = f.name + " (" + fmtSize(f.length) + ")";
     sel.appendChild(o);
   });
-  document.getElementById("plControls").style.display = "flex";
+  playerCard.querySelector(".ip-controls").style.display = "flex";
+  playerCard.querySelector(".ip-dlhint").textContent = "Save any file below once its download completes";
   sel.onchange = function () {
     var f = t.files[Number(sel.value)];
     if (f) streamFile(f);
@@ -782,11 +776,12 @@ function buildFileSelector(t) {
 }
 
 function streamFile(file) {
+  if (!playerCard) return;
   if (currentMedia && currentMedia.parentNode) currentMedia.parentNode.removeChild(currentMedia);
   if (currentFile && currentFile.deselect) { try { currentFile.deselect(); } catch (e) {} }
   currentFile = file;
   currentMedia = null;
-  var wrap = document.getElementById("videoWrap");
+  var wrap = playerCard.querySelector(".ip-video");
   wrap.innerHTML = "";
   var ph = el("div", "vplaceholder", "Buffering " + file.name + "…");
   wrap.appendChild(ph);
@@ -801,8 +796,9 @@ function streamFile(file) {
   });
 }
 
-function renderPlayerFiles(t) {
-  var box = document.getElementById("plFiles");
+function renderFileList(t) {
+  if (!playerCard) return;
+  var box = playerCard.querySelector(".ip-files");
   box.innerHTML = "";
   t.files.forEach(function (f) {
     var row = el("div", "frow");
@@ -835,20 +831,20 @@ function renderPlayerFiles(t) {
 }
 
 function tickPlayer() {
-  if (document.getElementById("playerModal").style.display === "none") return;
+  if (!playerCard) return;
   var elapsed = Math.floor((Date.now() - playerOpenSince) / 1000);
   var t = wtTorrent;
   if (!t || !t.files || !t.files.length) {
-    setPlStatus("Connecting to swarm… " + elapsed + "s · " + (t ? t.numPeers : 0) + " peers", true);
-    if (elapsed > 45) setPlNote("Still no metadata — this swarm likely has no WebTorrent (WebRTC) peers. Use ⤓ Open to download with qBittorrent/WebTorrent Desktop instead.");
+    setStatus("Connecting to swarm… " + elapsed + "s · " + (t ? t.numPeers : 0) + " peers", true);
+    if (elapsed > 45) setNote("Still no metadata — this swarm likely has no WebTorrent (WebRTC) peers. Use ⤓ Open to download with qBittorrent/WebTorrent Desktop instead.");
     return;
   }
   var pct = Math.round(t.progress * 100);
-  setPlStatus("▼ " + fmtSize(t.downloadSpeed) + "/s · " + pct + "% · " + t.numPeers + " peers · " + Math.round(t.downloaded / 1048576) + " MB down", false);
+  setStatus("▼ " + fmtSize(t.downloadSpeed) + "/s · " + pct + "% · " + t.numPeers + " peers · " + Math.round(t.downloaded / 1048576) + " MB down", false);
   if (t.downloaded === 0 && t.numPeers === 0 && elapsed > 90) {
-    setPlNote("No peers are connecting. This torrent has no browser-reachable peers right now — use ⤓ Open (magnet) with a desktop client.");
+    setNote("No peers are connecting. This torrent has no browser-reachable peers right now — use ⤓ Open (magnet) with a desktop client.");
   }
-  var rows = document.querySelectorAll("#plFiles .frow");
+  var rows = playerCard.querySelectorAll(".ip-files .frow");
   for (var i = 0; i < rows.length; i++) {
     var f = rows[i]._file;
     if (!f) continue;
@@ -859,25 +855,7 @@ function tickPlayer() {
   }
 }
 
-function closePlayer() {
-  document.getElementById("playerModal").style.display = "none";
-  if (ticker) { clearInterval(ticker); ticker = null; }
-  if (currentMedia && currentMedia.parentNode) currentMedia.parentNode.removeChild(currentMedia);
-  currentMedia = null; currentFile = null;
-  document.getElementById("videoWrap").innerHTML = "";
-  if (wtClient && wtTorrent) { try { wtClient.remove(wtTorrent); } catch (e) {} }
-  wtTorrent = null;
-}
-
-document.getElementById("plClose").addEventListener("click", closePlayer);
-document.getElementById("playerModal").addEventListener("click", function (e) {
-  if (e.target === this) closePlayer();
-});
-document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape" && document.getElementById("playerModal").style.display !== "none") closePlayer();
-});
-
-document.getElementById("plSaveTorrent").addEventListener("click", function () {
+function saveTorrentFile() {
   if (!wtTorrent) return;
   try {
     var blob = new Blob([wtTorrent.torrentFile], { type: "application/x-bittorrent" });
@@ -891,6 +869,21 @@ document.getElementById("plSaveTorrent").addEventListener("click", function () {
   } catch (e) {
     toast("Could not generate .torrent: " + (e.message || e));
   }
+}
+
+function closePlayer() {
+  if (ticker) { clearInterval(ticker); ticker = null; }
+  if (currentMedia && currentMedia.parentNode) currentMedia.parentNode.removeChild(currentMedia);
+  currentMedia = null; currentFile = null;
+  if (playerCard && playerCard.parentNode) playerCard.parentNode.removeChild(playerCard);
+  if (playerRow && playerRow._rowEl) playerRow._rowEl.classList.remove("playing");
+  playerCard = null; playerRow = null; playerSection = null;
+  if (wtClient && wtTorrent) { try { wtClient.remove(wtTorrent); } catch (e) {} }
+  wtTorrent = null;
+}
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape" && playerCard) closePlayer();
 });
 
 /* ---------------- clipboard & toast ---------------- */
@@ -921,23 +914,11 @@ function copyText(text, okMsg) {
 
 /* ---------------- events ---------------- */
 
-document.querySelectorAll(".tab").forEach(function (t) {
-  t.addEventListener("click", function () {
-    state.tab = t.getAttribute("data-tab");
-    var st = state[state.tab];
-    if (!st.rows && !st.loading && !st.error && state.tab !== "search") {
-      if (state.tab === "movies") loadMovies(state.movies.page);
-      else loadTV(state.tv.page);
-    } else {
-      render();
-    }
+["sortSelM", "sortSelT", "qualitySelM", "minSeedsM", "minSeedsT"].forEach(function (id) {
+  document.getElementById(id).addEventListener("change", function () {
+    if (playerSection === "movies" || playerSection === "tv") closePlayer();
+    renderSection("movies"); renderSection("tv");
   });
-});
-
-document.getElementById("refreshBtn").addEventListener("click", refreshCurrent);
-
-["sortSel", "sortSelTV", "qualitySel", "minSeeds", "minSeedsTV"].forEach(function (id) {
-  document.getElementById(id).addEventListener("change", render);
 });
 
 document.getElementById("searchBtn").addEventListener("click", function () {
@@ -948,11 +929,21 @@ document.getElementById("searchInput").addEventListener("keydown", function (e) 
   if (e.key === "Enter") document.getElementById("searchBtn").click();
 });
 
-document.getElementById("copyAllBtn").addEventListener("click", function () {
-  var rows = currentSortedRows();
+document.getElementById("copyAllM").addEventListener("click", function () {
+  var rows = sortedRows("movies");
   if (!rows.length) return;
-  copyText(rows.map(function (r) { return r.magnet; }).join("\n"),
-           rows.length + " magnets copied");
+  copyText(rows.map(function (r) { return r.magnet; }).join("\n"), rows.length + " movie magnets copied");
+});
+document.getElementById("copyAllT").addEventListener("click", function () {
+  var rows = sortedRows("tv");
+  if (!rows.length) return;
+  copyText(rows.map(function (r) { return r.magnet; }).join("\n"), rows.length + " TV magnets copied");
+});
+
+document.getElementById("refreshBtn").addEventListener("click", function () {
+  closePlayer();
+  loadMovies(state.movies.page);
+  loadTV(state.tv.page);
 });
 
 var autoTimer = null;
@@ -960,7 +951,9 @@ document.getElementById("autoRefresh").addEventListener("change", function (e) {
   if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
   if (e.target.checked) {
     autoTimer = setInterval(function () {
-      if (!document.hidden && state.tab !== "search") refreshCurrent();
+      if (document.hidden) return;
+      if (playerSection !== "movies") loadMovies(state.movies.page);
+      if (playerSection !== "tv") loadTV(state.tv.page);
     }, 60000);
     toast("Auto-refresh on (every 60s)");
   }
@@ -968,6 +961,7 @@ document.getElementById("autoRefresh").addEventListener("change", function (e) {
 
 /* ---------------- boot ---------------- */
 loadMovies(1);
+loadTV(1);
 </script>
 </body>
 </html>
