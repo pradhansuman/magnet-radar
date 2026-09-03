@@ -208,6 +208,7 @@
   <button class="nav-item" data-sec="top100"><span class="ic">⭐</span>Top 100 Torrents</button>
   <div class="nav-sep">Live</div>
   <button class="nav-item" data-sec="livetv"><span class="ic">📡</span>Live TV</button>
+  <button class="nav-item" data-sec="radio"><span class="ic">📻</span>Radio</button>
   <div class="nav-sep">Torrents · Video</div>
   <button class="nav-item active" data-sec="movies"><span class="ic">🎬</span>Movie Library</button>
   <button class="nav-item" data-sec="tv"><span class="ic">📺</span>TV Library · New Episodes</button>
@@ -273,6 +274,14 @@
     </label>
     <input type="text" id="liveFilter" placeholder="Filter channels by name…" autocomplete="off">
     <span class="sec-sub">streams are public HLS feeds — some are geo-blocked or temporarily offline</span>
+  </div>
+
+  <div class="toolbar sec-toolbar" data-for="radio" style="display:none;">
+    <label>Genre
+      <select id="radioTagSel"></select>
+    </label>
+    <input type="text" id="radioFilter" placeholder="Filter stations by name…" autocomplete="off">
+    <span class="sec-sub">community-indexed public streams — some are offline or geo-blocked</span>
   </div>
 
   <div class="toolbar sec-toolbar" data-for="plain" style="display:none;">
@@ -368,6 +377,7 @@ var SECTIONS = {
   trailers: { icon: "🎞️", name: "Movie Trailers",   sub: "archive.org · instant play", type: "ia", coll: "movie_trailers" },
   freemusic: { icon: "🎵", name: "Free Music",       sub: "archive.org netlabels · Creative Commons · instant play", type: "ia", coll: "netlabels", mt: "audio" },
   livetv:   { icon: "📡", name: "Live TV",           sub: "free live channels via iptv-org · HLS", type: "livetv" },
+  radio:    { icon: "📻", name: "Radio",             sub: "free live radio via radio-browser.info", type: "radio" },
   trending: { icon: "📈", name: "Trending Torrents", sub: "latest across sources · most seeded right now", type: "computed" },
   top100:   { icon: "⭐", name: "Top 100 Torrents",   sub: "latest across sources · ranked by seeders", type: "computed" },
   movies:   { icon: "🎬", name: "Movie Library",      sub: "YTS · newest additions", type: "feed" },
@@ -384,10 +394,12 @@ var state = {
   movies: { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   tv:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   search: { q: "", rows: null, loading: false, error: null },
-  live:   { cat: "news", rows: null, loading: false, error: null, q: "" }
+  live:   { cat: "news", rows: null, loading: false, error: null, q: "" },
+  radio:  { tag: "top", rows: null, loading: false, error: null, q: "" }
 };
 var iaState = {};   // sec -> {page, rows, pages, total, loading, error}
 var LIVE_CATS = [["news","News"],["movies","Movies"],["music","Music"],["sports","Sports"],["documentary","Documentary"],["kids","Kids"],["science","Science"],["entertainment","Entertainment"],["general","General"],["travel","Travel"],["weather","Weather"]];
+var RADIO_TAGS = [["top","Top Stations"],["news","News"],["pop","Pop"],["rock","Rock"],["classical","Classical"],["jazz","Jazz"],["dance","Dance"],["hip hop","Hip Hop"],["oldies","Oldies"],["chillout","Chillout"],["ambient","Ambient"],["techno","Techno"],["reggae","Reggae"],["80s","80s"]];
 var csvState = {};   // q -> {rows, loading, error}
 var currentSec = "movies";
 
@@ -609,6 +621,7 @@ function secState(sec) {
   if (def.type === "feed") return state[sec];
   if (def.type === "ia") return iaState[sec] || { rows: null, loading: false, error: null };
   if (def.type === "livetv") return state.live;
+  if (def.type === "radio") return state.radio;
   if (def.type === "search") return state.search;
   if (def.type === "csv") return csvState[def.q] || { rows: null, loading: false, error: null };
   return null;
@@ -622,6 +635,12 @@ function visibleRows(sec) {
     var all = (state.live.rows || []);
     var fl = q ? all.filter(function (r) { return r.title.toLowerCase().indexOf(q) !== -1; }) : all;
     return fl.slice(0, 300);
+  }
+  if (def.type === "radio") {
+    var rq = (state.radio.q || "").toLowerCase();
+    var rall = (state.radio.rows || []);
+    var rfl = rq ? rall.filter(function (r) { return r.title.toLowerCase().indexOf(rq) !== -1; }) : rall;
+    return rfl.slice(0, 300);
   }
   if (def.type === "movies") {
     var q = document.getElementById("qualitySelM").value;
@@ -685,6 +704,7 @@ function renderCurrent() {
     var match = (def.type === "feed" && f === sec) ||
                 (def.type === "ia" && f === "plain") ||
                 (def.type === "livetv" && f === "livetv") ||
+                (def.type === "radio" && f === "radio") ||
                 (def.type === "search" && f === "search") ||
                 (def.type === "csv" && f === "plain") ||
                 (def.type === "computed" && f === "plain");
@@ -754,6 +774,10 @@ function renderCurrent() {
     var tot = (state.live.rows || []).length;
     meta.textContent = (tot ? "Showing " + rows.length + " of " + tot : "0") + " channels · category: " + liveCatLabel(state.live.cat) + " · click a channel to watch";
   }
+  else if (def.type === "radio") {
+    var rtot = (state.radio.rows || []).length;
+    meta.textContent = (rtot ? "Showing " + rows.length + " of " + rtot : "0") + " stations · genre: " + radioTagLabel(state.radio.tag) + " · click a station to listen";
+  }
   else if (sec === "search") meta.textContent = state.search.q ? rows.length + " results for “" + state.search.q + "”" : "";
   else if (sec === "trending") meta.textContent = "Top " + rows.length + " most-seeded among the latest movie & TV releases";
   else if (sec === "top100") meta.textContent = "Top " + rows.length + " by seeders across the latest movie & TV feeds";
@@ -780,6 +804,8 @@ function loadSection(sec, force) {
     loadIA(sec, (s && s.page) || 1);
   } else if (def.type === "livetv") {
     loadLive(state.live.cat);
+  } else if (def.type === "radio") {
+    loadRadio(state.radio.tag);
   } else if (def.type === "csv") {
     if (force) delete csvState[def.q];
     loadCsv(sec);
@@ -790,6 +816,41 @@ function loadSection(sec, force) {
 function renderRow(r, sec) {
   var row = el("div", "row");
   if (playerRow === r) row.classList.add("playing");
+
+  if (r.isRadio) {
+    var rt = el("div", "title");
+    if (r.logo) {
+      var rimg = document.createElement("img");
+      rimg.src = r.logo; rimg.alt = ""; rimg.loading = "lazy";
+      rimg.style.cssText = "height:26px;vertical-align:-8px;margin-right:8px;border-radius:5px;background:#fff;padding:1px;";
+      rimg.onerror = function () { if (rimg.parentNode) rimg.parentNode.removeChild(rimg); };
+      rt.appendChild(rimg);
+    }
+    rt.appendChild(document.createTextNode(r.title));
+    row.appendChild(rt);
+    var ra = el("div", "actions");
+    var rpb = el("button", "btn mini primary", "▶ Listen");
+    rpb.addEventListener("click", function (e) { e.stopPropagation(); togglePlay(r, row, sec); });
+    ra.appendChild(rpb);
+    var rcb = el("button", "btn mini", "⧉ URL");
+    rcb.title = "Copy stream URL";
+    rcb.addEventListener("click", function (e) { e.stopPropagation(); copyText(r.url, "Stream URL copied"); });
+    ra.appendChild(rcb);
+    row.appendChild(ra);
+    var rm = el("div", "meta");
+    rm.appendChild(el("span", "chip seed", "● LIVE"));
+    if (r.group) rm.appendChild(el("span", "chip q", r.group));
+    if (r.codec) rm.appendChild(el("span", "chip", r.codec + (r.bitrate ? " · " + r.bitrate + " kbps" : "")));
+    var tg = (r.tags || "").split(",")[0].trim();
+    if (tg) rm.appendChild(el("span", "chip", tg));
+    row.appendChild(rm);
+    row.addEventListener("click", function (e) {
+      if (e.target.closest("button, a, select, input, label")) return;
+      togglePlay(r, row, sec);
+    });
+    r._rowEl = row;
+    return row;
+  }
 
   if (r.isLive) {
     var lt = el("div", "title");
@@ -943,6 +1004,11 @@ function liveCatLabel(cat) {
   return cat;
 }
 
+function radioTagLabel(tag) {
+  for (var i = 0; i < RADIO_TAGS.length; i++) if (RADIO_TAGS[i][0] === tag) return RADIO_TAGS[i][1];
+  return tag;
+}
+
 function loadLive(cat) {
   var st = state.live;
   if (st.cat === cat && st.rows) { renderCurrent(); return; }
@@ -958,6 +1024,52 @@ function loadLive(cat) {
     .catch(function (e) {
       st.loading = false; st.error = e.message || String(e);
       if (currentSec === "livetv") renderCurrent();
+    });
+}
+
+var RB_HOSTS = ["https://de1.api.radio-browser.info", "https://de2.api.radio-browser.info", "https://all.api.radio-browser.info"];
+function rbFetch(path) {
+  var idx = 0;
+  function attempt() {
+    if (idx >= RB_HOSTS.length) throw new Error("All radio-browser servers unreachable.");
+    var host = RB_HOSTS[idx++];
+    return fetchJSON(host + path, 15000).catch(function (e) {
+      if (idx < RB_HOSTS.length) return attempt();
+      throw e;
+    });
+  }
+  return attempt();
+}
+
+function loadRadio(tag) {
+  var st = state.radio;
+  if (st.tag === tag && st.rows) { renderCurrent(); return; }
+  st.tag = tag; st.loading = true; st.error = null; st.rows = null; st.q = "";
+  document.getElementById("radioFilter").value = "";
+  if (currentSec === "radio") renderCurrent();
+  var path = "/json/stations/search?limit=500&order=clickcount&reverse=true&hidebroken=true";
+  if (tag !== "top") path += "&tag=" + encodeURIComponent(tag);
+  rbFetch(path)
+    .then(function (list) {
+      st.rows = (list || []).filter(function (s) { return (s.url_resolved || s.url || "").indexOf("https://") === 0; }).map(function (s) {
+        return {
+          title: s.name || "Unnamed station",
+          logo: s.favicon || "",
+          group: s.country || "",
+          tags: s.tags || "",
+          codec: s.codec || "",
+          bitrate: Number(s.bitrate) || 0,
+          isRadio: true,
+          url: s.url_resolved || s.url,
+          magnet: null, quality: null, sizeStr: null, sizeB: 0, seeds: null, peers: null, dateUnix: 0
+        };
+      });
+      st.loading = false;
+      if (currentSec === "radio") renderCurrent();
+    })
+    .catch(function (e) {
+      st.loading = false; st.error = e.message || String(e);
+      if (currentSec === "radio") renderCurrent();
     });
 }
 
@@ -1185,6 +1297,38 @@ function startLiveStream(r) {
   });
 }
 
+function startRadioStream(r) {
+  playerOpenSince = Date.now();
+  setStatus("📻 Tuning in…", true);
+  playerCard.querySelector(".ip-hint").textContent = "Live radio from the radio-browser.info community catalog — third-party public feeds can go offline.";
+  var wrap = playerCard.querySelector(".ip-video");
+  wrap.innerHTML = "";
+  var a = document.createElement("audio");
+  a.controls = true; a.autoplay = true; a.preload = "none";
+  a.muted = true;
+  a.style.cssText = "width:100%;margin:34px 0;";
+  wrap.appendChild(a);
+  currentMedia = a;
+  setStatus("📻 LIVE — " + r.title, false);
+  setNote("Streams start muted — click the 🔊 speaker for sound. If a station is silent or errors out, it's offline or geo-blocked; try another.");
+  var isHls = /\.m3u8(\?|$)/i.test(r.url);
+  if (isHls) {
+    loadHls().then(function (Hls) {
+      if (!playerCard || playerRow !== r) return;
+      hlsCurrent = new Hls({ enableWorker: true });
+      hlsCurrent.loadSource(r.url);
+      hlsCurrent.attachMedia(a);
+    }).catch(function (e) { setNote(e.message); });
+  } else {
+    a.src = r.url;
+  }
+  var p = a.play();
+  if (p && p.catch) p.catch(function () {});
+  a.addEventListener("error", function () {
+    if (playerCard && playerRow === r) setNote("This station's stream failed — offline, geo-blocked, or unsupported format. Try another.");
+  });
+}
+
 function openPlayer(r, rowEl, sec) {
   closePlayer();
 
@@ -1209,12 +1353,11 @@ function openPlayer(r, rowEl, sec) {
   playerCard.querySelector(".ip-title").textContent = r.title;
   playerCard.querySelector(".ip-close").addEventListener("click", closePlayer);
   var stBtn = playerCard.querySelector(".ip-savetorrent");
-  stBtn.style.display = (r.isLive || r.isIA) ? "none" : "";
+  stBtn.style.display = (r.isLive || r.isIA || r.isRadio) ? "none" : "";
   stBtn.addEventListener("click", function () { saveTorrentFile(); });
   playerCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
 
-  playerCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
-
+  if (r.isRadio) { startRadioStream(r); return; }
   if (r.isLive) { startLiveStream(r); return; }
   if (r.isIA) { startIaStream(r); return; }
 
@@ -1505,6 +1648,19 @@ document.getElementById("liveCatSel").addEventListener("change", function (e) {
   if (playerSection === "livetv") closePlayer();
   loadLive(e.target.value);
 });
+document.getElementById("radioTagSel").addEventListener("change", function (e) {
+  if (playerSection === "radio") closePlayer();
+  loadRadio(e.target.value);
+});
+var radioFilterTimer = null;
+document.getElementById("radioFilter").addEventListener("input", function (e) {
+  clearTimeout(radioFilterTimer);
+  radioFilterTimer = setTimeout(function () {
+    state.radio.q = e.target.value.trim();
+    if (playerSection === "radio") closePlayer();
+    renderCurrent();
+  }, 200);
+});
 
 /* ---------------- boot ---------------- */
 (function () {
@@ -1514,6 +1670,13 @@ document.getElementById("liveCatSel").addEventListener("change", function (e) {
     o.value = c[0]; o.textContent = c[1];
     if (c[0] === "news") o.selected = true;
     sel.appendChild(o);
+  });
+  var rsel = document.getElementById("radioTagSel");
+  RADIO_TAGS.forEach(function (c) {
+    var o = document.createElement("option");
+    o.value = c[0]; o.textContent = c[1];
+    if (c[0] === "top") o.selected = true;
+    rsel.appendChild(o);
   });
 })();
 showSection("movies");
