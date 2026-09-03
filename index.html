@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MagnetRadar — Latest Torrents &amp; Magnets</title>
+<title>MagnetRadar — Browse Torrents</title>
 <style>
   :root{
     --bg:#0b0f14; --panel:#11161d; --panel2:#161d26; --line:#1f2a36;
     --text:#e6edf3; --muted:#8b98a5; --accent:#22d3a7; --accent2:#0ea5a3;
-    --danger:#f87171; --chip:#1a2530;
+    --chip:#1a2530; --side-w:232px;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   html,body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; min-height:100%;}
@@ -17,13 +17,13 @@
   a:hover{text-decoration:underline;}
 
   header{
-    position:sticky; top:0; z-index:10; background:rgba(11,15,20,.92);
+    position:sticky; top:0; z-index:20; background:rgba(11,15,20,.94);
     backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
-    padding:14px 20px;
+    padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
   }
-  .head-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap; max-width:1100px; margin:0 auto;}
-  .logo{font-size:20px; font-weight:800; letter-spacing:.3px; display:flex; align-items:center; gap:8px;}
+  .logo{font-size:19px; font-weight:800; letter-spacing:.3px; white-space:nowrap;}
   .logo em{color:var(--accent); font-style:normal;}
+  .tagline{font-size:12px; color:var(--muted);}
   .spacer{flex:1;}
   .head-actions{display:flex; align-items:center; gap:10px;}
   .switch{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); cursor:pointer; user-select:none;}
@@ -40,13 +40,32 @@
   .btn:disabled:hover{border-color:var(--line); color:var(--text);}
   .btn.primary:disabled:hover{color:#04241c;}
 
-  main{max-width:1100px; margin:0 auto; padding:22px 20px;}
-  section.block{margin-bottom:38px;}
-  .sec-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:4px;}
-  .sec-head h2{font-size:17px; font-weight:800; letter-spacing:.2px;}
-  .sec-head h2 .ic{margin-right:4px;}
-  .sec-sub{font-size:12px; color:var(--muted);}
-  .sec-meta{font-size:12.5px; color:var(--muted); margin:6px 0 12px; min-height:16px;}
+  /* ---- sidebar ---- */
+  aside{
+    position:fixed; top:53px; left:0; bottom:0; width:var(--side-w);
+    overflow-y:auto; background:var(--panel); border-right:1px solid var(--line);
+    padding-bottom:20px; z-index:15;
+  }
+  .side-title{
+    background:var(--accent); color:#04241c; font-weight:800; font-size:13.5px;
+    letter-spacing:1px; text-transform:uppercase; padding:11px 16px;
+  }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; width:100%;
+    padding:10px 16px; font-size:13.5px; color:var(--text); cursor:pointer;
+    border-bottom:1px solid var(--line); background:none; border-left:none; border-right:none; border-top:none;
+    text-align:left; font-family:inherit;
+  }
+  .nav-item .ic{width:20px; text-align:center; font-size:15px;}
+  .nav-item:hover{background:var(--panel2); color:var(--accent);}
+  .nav-item.active{background:rgba(34,211,167,.09); color:var(--accent); font-weight:700; box-shadow:inset 3px 0 0 var(--accent);}
+  .nav-sep{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); padding:12px 16px 4px;}
+
+  main{margin-left:var(--side-w); padding:22px 24px; max-width:1000px;}
+  .sec-head{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+  .sec-head h2{font-size:19px; font-weight:800;}
+  .sec-sub{font-size:12.5px; color:var(--muted);}
+  .sec-meta{font-size:12.5px; color:var(--muted); margin:8px 0 12px; min-height:16px;}
   .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;}
   .toolbar select, .toolbar input[type=text]{
     background:var(--panel); border:1px solid var(--line); color:var(--text);
@@ -130,7 +149,7 @@
   }
   .samples button:hover{color:var(--accent); border-color:var(--accent);}
 
-  footer{max-width:1100px; margin:10px auto 0; padding:0 20px; font-size:12px; color:var(--muted); line-height:1.6;}
+  footer{margin:10px auto 0; padding:0 24px 0 calc(var(--side-w) + 24px); font-size:12px; color:var(--muted); line-height:1.6; max-width:1000px;}
   footer .warn{color:#e8c268;}
 
   #toast{
@@ -141,10 +160,21 @@
   }
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  @media (max-width:640px){
+  @media (max-width:880px){
+    :root{--side-w:0px;}
+    aside{
+      position:sticky; top:53px; width:100%; bottom:auto; display:flex;
+      overflow-x:auto; padding:0; border-right:none; border-bottom:1px solid var(--line);
+    }
+    .side-title{display:none;}
+    .nav-sep{display:none;}
+    .nav-item{border-bottom:none; border-right:1px solid var(--line); white-space:nowrap; padding:9px 12px;}
+    .nav-item.active{box-shadow:inset 0 -3px 0 var(--accent);}
+    main{padding:18px 14px;}
+    footer{padding:0 14px;}
     .row{grid-template-columns:1fr;}
     .row .actions{justify-content:flex-start;}
-    .frow{grid-template-columns:auto 1fr auto; }
+    .frow{grid-template-columns:auto 1fr auto;}
     .frow .fbar{display:none;}
   }
 </style>
@@ -152,91 +182,92 @@
 <body>
 
 <header>
-  <div class="head-row">
-    <div class="logo">🧲 Magnet<em>Radar</em></div>
-    <div class="sec-sub">click any torrent to stream it right here</div>
-    <div class="spacer"></div>
-    <div class="head-actions">
-      <label class="switch" title="Re-fetch the latest lists every 60 seconds">
-        <input type="checkbox" id="autoRefresh"> Auto-refresh 60s
-      </label>
-      <button class="btn primary" id="refreshBtn">↻ Refresh all</button>
-    </div>
+  <div class="logo">🧲 Magnet<em>Radar</em></div>
+  <div class="tagline">click any torrent to stream it right here</div>
+  <div class="spacer"></div>
+  <div class="head-actions">
+    <label class="switch" title="Re-fetch the latest feeds every 60 seconds">
+      <input type="checkbox" id="autoRefresh"> Auto-refresh 60s
+    </label>
+    <button class="btn primary" id="refreshBtn">↻ Refresh</button>
   </div>
 </header>
 
+<aside id="sidebar">
+  <div class="side-title">Browse Torrents</div>
+  <button class="nav-item" data-sec="trending"><span class="ic">📈</span>Trending Torrents</button>
+  <button class="nav-item" data-sec="top100"><span class="ic">⭐</span>Top 100 Torrents</button>
+  <div class="nav-sep">Video</div>
+  <button class="nav-item active" data-sec="movies"><span class="ic">🎬</span>Movie Library</button>
+  <button class="nav-item" data-sec="tv"><span class="ic">📺</span>TV Library · New Episodes</button>
+  <button class="nav-item" data-sec="docs"><span class="ic">🎥</span>Documentaries</button>
+  <button class="nav-item" data-sec="anime"><span class="ic">🎌</span>Anime</button>
+  <div class="nav-sep">Other Categories</div>
+  <button class="nav-item" data-sec="apps"><span class="ic">🧩</span>Applications</button>
+  <button class="nav-item" data-sec="games"><span class="ic">🎮</span>Games</button>
+  <button class="nav-item" data-sec="music"><span class="ic">🎵</span>Music</button>
+  <div class="nav-sep">Tools</div>
+  <button class="nav-item" data-sec="search"><span class="ic">🔍</span>Search All</button>
+</aside>
+
 <main>
-  <!-- ============ MOVIES ============ -->
-  <section class="block" id="sec-movies">
-    <div class="sec-head">
-      <h2><span class="ic">🎬</span>Latest Movies</h2>
-      <span class="sec-sub">YTS · newest additions</span>
-    </div>
-    <div class="sec-meta" id="moviesMeta"></div>
-    <div class="toolbar">
-      <label>Quality
-        <select id="qualitySelM">
-          <option value="all" selected>All</option>
-          <option value="2160p">2160p</option>
-          <option value="1080p">1080p</option>
-          <option value="720p">720p</option>
-        </select>
-      </label>
-      <label>Sort
-        <select id="sortSelM">
-          <option value="new">Newest first</option>
-          <option value="seed">Most seeded</option>
-          <option value="size">Largest</option>
-        </select>
-      </label>
-      <label>Min seeds <input type="number" id="minSeedsM" min="0" value="0"></label>
-      <span class="spacer"></span>
-      <button class="btn" id="copyAllM">⧉ Copy all magnets</button>
-    </div>
-    <div class="list" id="moviesList"></div>
-    <div class="pager" id="moviesPager"></div>
-  </section>
+  <div class="sec-head">
+    <h2 id="secTitle"></h2>
+    <span class="sec-sub" id="secSub"></span>
+  </div>
+  <div class="sec-meta" id="secMeta"></div>
 
-  <!-- ============ TV ============ -->
-  <section class="block" id="sec-tv">
-    <div class="sec-head">
-      <h2><span class="ic">📺</span>Latest TV Episodes</h2>
-      <span class="sec-sub">EZTV · newest releases</span>
-    </div>
-    <div class="sec-meta" id="tvMeta"></div>
-    <div class="toolbar">
-      <label>Sort
-        <select id="sortSelT">
-          <option value="new">Newest first</option>
-          <option value="seed">Most seeded</option>
-          <option value="size">Largest</option>
-        </select>
-      </label>
-      <label>Min seeds <input type="number" id="minSeedsT" min="0" value="0"></label>
-      <span class="spacer"></span>
-      <button class="btn" id="copyAllT">⧉ Copy all magnets</button>
-    </div>
-    <div class="list" id="tvList"></div>
-    <div class="pager" id="tvPager"></div>
-  </section>
+  <div class="toolbar sec-toolbar" data-for="movies" style="display:none;">
+    <label>Quality
+      <select id="qualitySelM">
+        <option value="all" selected>All</option>
+        <option value="2160p">2160p</option>
+        <option value="1080p">1080p</option>
+        <option value="720p">720p</option>
+      </select>
+    </label>
+    <label>Sort
+      <select id="sortSelM">
+        <option value="new">Newest first</option>
+        <option value="seed">Most seeded</option>
+        <option value="size">Largest</option>
+      </select>
+    </label>
+    <label>Min seeds <input type="number" id="minSeedsM" min="0" value="0"></label>
+    <span class="spacer"></span>
+    <button class="btn" id="copyAllM">⧉ Copy all magnets</button>
+  </div>
 
-  <!-- ============ SEARCH ============ -->
-  <section class="block" id="sec-search">
-    <div class="sec-head">
-      <h2><span class="ic">🔍</span>Search All Categories</h2>
-      <span class="sec-sub">Torrents-CSV · movies, TV, apps, games, books</span>
-    </div>
-    <div class="sec-meta" id="searchMeta"></div>
-    <div class="toolbar">
-      <input type="text" id="searchInput" placeholder="Search torrents… e.g. ubuntu, debian, big buck bunny" autocomplete="off">
-      <button class="btn primary" id="searchBtn">Search</button>
-    </div>
-    <div class="list" id="searchList"></div>
-  </section>
+  <div class="toolbar sec-toolbar" data-for="tv" style="display:none;">
+    <label>Sort
+      <select id="sortSelT">
+        <option value="new">Newest first</option>
+        <option value="seed">Most seeded</option>
+        <option value="size">Largest</option>
+      </select>
+    </label>
+    <label>Min seeds <input type="number" id="minSeedsT" min="0" value="0"></label>
+    <span class="spacer"></span>
+    <button class="btn" id="copyAllT">⧉ Copy all magnets</button>
+  </div>
+
+  <div class="toolbar sec-toolbar" data-for="search" style="display:none;">
+    <input type="text" id="searchInput" placeholder="Search all categories… e.g. ubuntu, big buck bunny" autocomplete="off">
+    <button class="btn primary" id="searchBtn">Search</button>
+  </div>
+
+  <div class="toolbar sec-toolbar" data-for="plain" style="display:none;">
+    <span class="sec-sub" id="plainNote"></span>
+    <span class="spacer"></span>
+    <button class="btn" id="copyAllPlain">⧉ Copy all magnets</button>
+  </div>
+
+  <div class="list" id="secList"></div>
+  <div class="pager" id="secPager"></div>
 </main>
 
 <footer>
-  <div>Sources: <a href="https://yts.mx/api" target="_blank" rel="noopener">YTS API</a> (movies) · <a href="https://eztvx.to/" target="_blank" rel="noopener">EZTV API</a> (TV) · <a href="https://torrents-csv.com" target="_blank" rel="noopener">Torrents-CSV</a> (search). Everything runs in your browser; nothing is proxied or logged. The WebTorrent streaming engine is loaded on demand from jsDelivr.</div>
+  <div>Sources: <a href="https://yts.mx/api" target="_blank" rel="noopener">YTS API</a> (movies) · <a href="https://eztvx.to/" target="_blank" rel="noopener">EZTV API</a> (TV) · <a href="https://torrents-csv.com" target="_blank" rel="noopener">Torrents-CSV</a> (categories &amp; search). Everything runs in your browser; nothing is proxied or logged. The WebTorrent engine loads on demand from jsDelivr.</div>
   <div class="warn">⚠ Share only what's legal to share: public-domain and open-source releases, Creative-Commons media, and your own files. Respect the law where you live.</div>
 </footer>
 
@@ -306,11 +337,28 @@ function ytsDateToUnix(s) {
   return isNaN(d.getTime()) ? 0 : Math.floor(d.getTime() / 1000);
 }
 
+/* ---------------- sections registry & state ---------------- */
+
+var SECTIONS = {
+  trending: { icon: "📈", name: "Trending Torrents", sub: "latest across sources · most seeded right now", type: "computed" },
+  top100:   { icon: "⭐", name: "Top 100 Torrents",   sub: "latest across sources · ranked by seeders", type: "computed" },
+  movies:   { icon: "🎬", name: "Movie Library",      sub: "YTS · newest additions", type: "feed" },
+  tv:       { icon: "📺", name: "TV Library",         sub: "EZTV · new episodes", type: "feed" },
+  docs:     { icon: "🎥", name: "Documentaries",      sub: "via Torrents-CSV · top by seeders", type: "csv", q: "documentary" },
+  anime:    { icon: "🎌", name: "Anime",              sub: "via Torrents-CSV · top by seeders", type: "csv", q: "anime" },
+  apps:     { icon: "🧩", name: "Applications",       sub: "via Torrents-CSV · top by seeders", type: "csv", q: "software" },
+  games:    { icon: "🎮", name: "Games",              sub: "via Torrents-CSV · top by seeders", type: "csv", q: "games" },
+  music:    { icon: "🎵", name: "Music",              sub: "via Torrents-CSV · top by seeders", type: "csv", q: "music" },
+  search:   { icon: "🔍", name: "Search All",         sub: "Torrents-CSV · any query", type: "search" }
+};
+
 var state = {
   movies: { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   tv:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
   search: { q: "", rows: null, loading: false, error: null }
 };
+var csvState = {};   // q -> {rows, loading, error}
+var currentSec = "movies";
 
 /* ---------------- fetching ---------------- */
 
@@ -343,7 +391,7 @@ function ytsFetch(path) {
 
 function loadMovies(page) {
   var st = state.movies;
-  st.loading = true; st.error = null; renderSection("movies");
+  st.loading = true; st.error = null; renderCurrent();
   ytsFetch("/api/v2/list_movies.json?limit=50&page=" + page + "&sort_by=date_added&order_by=desc")
     .then(function (j) {
       var data = j && j.data || {};
@@ -373,16 +421,16 @@ function loadMovies(page) {
       st.rows = rows; st.page = page;
       st.total = data.movie_count || null;
       st.pages = Math.min(50, Math.ceil((st.total || 5000) / 50) || null);
-      st.loading = false; renderSection("movies");
+      st.loading = false; renderCurrent();
     })
     .catch(function (e) {
-      st.loading = false; st.error = e.message || String(e); renderSection("movies");
+      st.loading = false; st.error = e.message || String(e); renderCurrent();
     });
 }
 
 function loadTV(page) {
   var st = state.tv;
-  st.loading = true; st.error = null; renderSection("tv");
+  st.loading = true; st.error = null; renderCurrent();
   fetchJSON("https://eztvx.to/api/get-torrents?limit=50&page=" + page, 14000)
     .then(function (j) {
       var ts = j && j.torrents || [];
@@ -405,64 +453,111 @@ function loadTV(page) {
       st.rows = rows; st.page = page;
       st.total = j && j.torrents_count || null;
       st.pages = null;
-      st.loading = false; renderSection("tv");
+      st.loading = false; renderCurrent();
     })
     .catch(function (e) {
-      st.loading = false; st.error = e.message || String(e); renderSection("tv");
+      st.loading = false; st.error = e.message || String(e); renderCurrent();
     });
 }
 
 function loadSearch(q) {
   var st = state.search;
-  st.loading = true; st.error = null; renderSection("search");
+  st.loading = true; st.error = null; renderCurrent();
   fetchJSON("https://torrents-csv.com/service/search?q=" + encodeURIComponent(q) + "&size=100", 14000)
     .then(function (j) {
-      var ts = j && j.torrents || [];
-      var rows = ts.map(function (t) {
-        return {
-          title: t.name,
-          quality: null,
-          sizeStr: fmtSize(t.size_bytes),
-          sizeB: Number(t.size_bytes) || 0,
-          seeds: Number(t.seeders) || 0,
-          peers: Number(t.leechers) || 0,
-          completed: Number(t.completed) || 0,
-          dateUnix: Number(t.created_unix) || 0,
-          magnet: buildMagnet(t.infohash, t.name)
-        };
-      });
-      st.rows = rows; st.q = q;
-      st.loading = false; renderSection("search");
+      st.rows = mapCsvRows(j); st.q = q;
+      st.loading = false; renderCurrent();
     })
     .catch(function (e) {
-      st.loading = false; st.error = e.message || String(e); renderSection("search");
+      st.loading = false; st.error = e.message || String(e); renderCurrent();
     });
 }
 
-/* ---------------- filtering & rendering ---------------- */
+function mapCsvRows(j) {
+  var ts = j && j.torrents || [];
+  return ts.map(function (t) {
+    return {
+      title: t.name,
+      quality: null,
+      sizeStr: fmtSize(t.size_bytes),
+      sizeB: Number(t.size_bytes) || 0,
+      seeds: Number(t.seeders) || 0,
+      peers: Number(t.leechers) || 0,
+      completed: Number(t.completed) || 0,
+      dateUnix: Number(t.created_unix) || 0,
+      magnet: buildMagnet(t.infohash, t.name)
+    };
+  });
+}
 
-function sortedRows(sec) {
-  var st = state[sec], rows;
-  if (sec === "movies") {
+function loadCsv(sec) {
+  var def = SECTIONS[sec];
+  var st = csvState[def.q];
+  if (!st) { st = csvState[def.q] = { rows: null, loading: false, error: null }; }
+  if (st.rows || st.loading) { renderCurrent(); return; }
+  st.loading = true; st.error = null; renderCurrent();
+  fetchJSON("https://torrents-csv.com/service/search?q=" + encodeURIComponent(def.q) + "&size=100", 14000)
+    .then(function (j) {
+      st.rows = mapCsvRows(j);
+      st.loading = false; renderCurrent();
+    })
+    .catch(function (e) {
+      st.loading = false; st.error = e.message || String(e); renderCurrent();
+    });
+}
+
+/* ---------------- computed sections ---------------- */
+
+function feedRows() {
+  return [].concat(state.movies.rows || [], state.tv.rows || []);
+}
+function computedRows(sec) {
+  var rows = feedRows().slice();
+  rows.sort(function (a, b) { return b.seeds - a.seeds; });
+  return sec === "top100" ? rows.slice(0, 100) : rows.slice(0, 50);
+}
+function feedsLoading() { return state.movies.loading || state.tv.loading; }
+
+/* ---------------- section state abstraction ---------------- */
+
+function secState(sec) {
+  var def = SECTIONS[sec];
+  if (def.type === "feed") return state[sec];
+  if (def.type === "search") return state.search;
+  if (def.type === "csv") return csvState[def.q] || { rows: null, loading: false, error: null };
+  return null;
+}
+function visibleRows(sec) {
+  var def = SECTIONS[sec];
+  if (def.type === "computed") return computedRows(sec);
+  if (def.type === "movies") {
     var q = document.getElementById("qualitySelM").value;
     var ms = Number(document.getElementById("minSeedsM").value) || 0;
-    rows = (st.rows || []).filter(function (r) {
+    var rows = (state.movies.rows || []).filter(function (r) {
       return (q === "all" || r.quality === q) && r.seeds >= ms;
     });
-  } else if (sec === "tv") {
-    var ms2 = Number(document.getElementById("minSeedsT").value) || 0;
-    rows = (st.rows || []).filter(function (r) { return r.seeds >= ms2; });
-  } else {
-    rows = (st.rows || []).slice();
+    var sort = document.getElementById("sortSelM").value;
+    rows = rows.slice();
+    if (sort === "seed") rows.sort(function (a, b) { return b.seeds - a.seeds || b.dateUnix - a.dateUnix; });
+    else if (sort === "size") rows.sort(function (a, b) { return b.sizeB - a.sizeB; });
+    else rows.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
+    return rows;
   }
-  var sort = sec === "movies" ? document.getElementById("sortSelM").value
-           : sec === "tv" ? document.getElementById("sortSelT").value : "seed";
-  rows = rows.slice();
-  if (sort === "seed") rows.sort(function (a, b) { return b.seeds - a.seeds || b.dateUnix - a.dateUnix; });
-  else if (sort === "size") rows.sort(function (a, b) { return b.sizeB - a.sizeB; });
-  else rows.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
-  return rows;
+  if (def.type === "tv") {
+    var ms2 = Number(document.getElementById("minSeedsT").value) || 0;
+    var rows2 = (state.tv.rows || []).filter(function (r) { return r.seeds >= ms2; });
+    var sort2 = document.getElementById("sortSelT").value;
+    rows2 = rows2.slice();
+    if (sort2 === "seed") rows2.sort(function (a, b) { return b.seeds - a.seeds || b.dateUnix - a.dateUnix; });
+    else if (sort2 === "size") rows2.sort(function (a, b) { return b.sizeB - a.sizeB; });
+    else rows2.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
+    return rows2;
+  }
+  var st = secState(sec);
+  return (st && st.rows) || [];
 }
+
+/* ---------------- rendering ---------------- */
 
 function el(tag, cls, text) {
   var e = document.createElement(tag);
@@ -471,16 +566,49 @@ function el(tag, cls, text) {
   return e;
 }
 
-function renderSection(sec) {
-  var st = state[sec];
-  var list = document.getElementById(sec + "List");
-  var meta = document.getElementById(sec + "Meta");
-  var pager = document.getElementById(sec + "Pager");
-  if (pager) pager.innerHTML = "";
-  list.innerHTML = "";
-  meta.textContent = "";
+function showSection(sec) {
+  currentSec = sec;
+  document.querySelectorAll(".nav-item").forEach(function (n) {
+    n.classList.toggle("active", n.getAttribute("data-sec") === sec);
+  });
+  renderCurrent();
+}
 
-  if (st.loading) {
+function renderCurrent() {
+  var sec = currentSec;
+  var def = SECTIONS[sec];
+  var st = secState(sec);
+  var list = document.getElementById("secList");
+  var meta = document.getElementById("secMeta");
+  var pager = document.getElementById("secPager");
+  pager.innerHTML = "";
+  list.innerHTML = "";
+
+  document.getElementById("secTitle").textContent = def.icon + " " + def.name;
+  document.getElementById("secSub").textContent = def.sub;
+
+  document.querySelectorAll(".sec-toolbar").forEach(function (tb) {
+    var f = tb.getAttribute("data-for");
+    var match = (def.type === "feed" && f === sec) ||
+                (def.type === "search" && f === "search") ||
+                (def.type === "csv" && f === "plain") ||
+                (def.type === "computed" && f === "plain");
+    tb.style.display = match ? "flex" : "none";
+  });
+  if (def.type === "csv" || def.type === "computed") {
+    document.getElementById("plainNote").textContent =
+      def.type === "computed"
+        ? "Computed live from the latest movie + TV feeds."
+        : "Keyword feed: “" + def.q + "” · results ranked by seeders.";
+  }
+
+  // loading?
+  var loading = def.type === "computed" ? feedsLoading() : (st && st.loading);
+  var error = def.type === "computed" ? null : (st && st.error);
+  var hasRows = def.type === "computed" ? feedRows().length > 0 : !!(st && st.rows);
+
+  meta.textContent = "";
+  if (loading) {
     var lk = el("div", "loading");
     var box = el("div");
     var sp = document.createElement("span"); sp.className = "spinner"; box.appendChild(sp);
@@ -488,20 +616,16 @@ function renderSection(sec) {
     lk.appendChild(box); list.appendChild(lk);
     return;
   }
-  if (st.error) {
+  if (error) {
     var ec = el("div", "error");
-    ec.appendChild(el("div", "", "⚠ " + st.error));
+    ec.appendChild(el("div", "", "⚠ " + error));
     var rb = el("button", "btn", "Retry");
     rb.style.marginTop = "12px";
-    rb.addEventListener("click", function () {
-      if (sec === "movies") loadMovies(state.movies.page);
-      else if (sec === "tv") loadTV(state.tv.page);
-      else if (state.search.q) loadSearch(state.search.q);
-    });
+    rb.addEventListener("click", function () { loadSection(sec, true); });
     ec.appendChild(rb); list.appendChild(ec);
     return;
   }
-  if (!st.rows) {
+  if (!hasRows) {
     if (sec === "search") {
       var ec2 = el("div", "empty");
       ec2.appendChild(el("div", "", "Search to find torrents across all categories."));
@@ -516,16 +640,19 @@ function renderSection(sec) {
       });
       ec2.appendChild(samples); list.appendChild(ec2);
     } else {
-      list.appendChild(el("div", "empty", "Nothing loaded yet — press Refresh all."));
+      list.appendChild(el("div", "empty", "Nothing loaded yet — press Refresh."));
     }
     return;
   }
 
-  var rows = sortedRows(sec);
+  var rows = visibleRows(sec);
 
-  if (sec === "movies") meta.textContent = rows.length + " torrent files · page " + st.page + (st.total ? " of ~" + st.total + " movies" : "");
-  if (sec === "tv") meta.textContent = rows.length + " releases · page " + st.page + (st.total ? " · " + Number(st.total).toLocaleString() + " indexed" : "");
-  if (sec === "search") meta.textContent = st.q ? rows.length + " results for “" + st.q + "”" : "";
+  if (sec === "movies") meta.textContent = rows.length + " torrent files · page " + state.movies.page + (state.movies.total ? " of ~" + state.movies.total + " movies" : "");
+  else if (sec === "tv") meta.textContent = rows.length + " releases · page " + state.tv.page + (state.tv.total ? " · " + Number(state.tv.total).toLocaleString() + " indexed" : "");
+  else if (sec === "search") meta.textContent = state.search.q ? rows.length + " results for “" + state.search.q + "”" : "";
+  else if (sec === "trending") meta.textContent = "Top " + rows.length + " most-seeded among the latest movie & TV releases";
+  else if (sec === "top100") meta.textContent = "Top " + rows.length + " by seeders across the latest movie & TV feeds";
+  else meta.textContent = rows.length + " results";
 
   if (rows.length === 0) {
     list.appendChild(el("div", "empty", "No torrents match the current filters."));
@@ -536,7 +663,18 @@ function renderSection(sec) {
     list.appendChild(renderRow(rows[i], sec));
   }
 
-  if (pager && (sec === "movies" || sec === "tv")) renderPager(sec);
+  if (sec === "movies" || sec === "tv") renderPager(sec);
+}
+
+function loadSection(sec, force) {
+  var def = SECTIONS[sec];
+  if (def.type === "feed") {
+    if (sec === "movies") loadMovies(state.movies.page); else loadTV(state.tv.page);
+  } else if (def.type === "csv") {
+    if (force) delete csvState[def.q];
+    loadCsv(sec);
+  }
+  // computed/search handled elsewhere
 }
 
 function renderRow(r, sec) {
@@ -610,15 +748,17 @@ function renderRow(r, sec) {
 
 function renderPager(sec) {
   var st = state[sec];
-  var pager = document.getElementById(sec + "Pager");
+  var pager = document.getElementById("secPager");
   var prev = el("button", "btn", "← Prev");
   prev.disabled = st.page <= 1;
   prev.addEventListener("click", function () {
+    if (playerSection === sec) closePlayer();
     if (sec === "movies") loadMovies(st.page - 1); else loadTV(st.page - 1);
   });
   var next = el("button", "btn", "Next →");
   if (st.pages && st.page >= st.pages) next.disabled = true;
   next.addEventListener("click", function () {
+    if (playerSection === sec) closePlayer();
     if (sec === "movies") loadMovies(st.page + 1); else loadTV(st.page + 1);
   });
   pager.appendChild(prev);
@@ -914,34 +1054,49 @@ function copyText(text, okMsg) {
 
 /* ---------------- events ---------------- */
 
+document.querySelectorAll(".nav-item").forEach(function (n) {
+  n.addEventListener("click", function () {
+    var sec = n.getAttribute("data-sec");
+    var def = SECTIONS[sec];
+    if (playerCard && playerSection !== sec) closePlayer();
+    if (def.type === "csv") loadCsv(sec);      // lazy-load, no-op if cached
+    showSection(sec);
+  });
+});
+
 ["sortSelM", "sortSelT", "qualitySelM", "minSeedsM", "minSeedsT"].forEach(function (id) {
   document.getElementById(id).addEventListener("change", function () {
     if (playerSection === "movies" || playerSection === "tv") closePlayer();
-    renderSection("movies"); renderSection("tv");
+    renderCurrent();
   });
 });
 
 document.getElementById("searchBtn").addEventListener("click", function () {
   var q = document.getElementById("searchInput").value.trim();
-  if (q) loadSearch(q);
+  if (q) { if (playerSection === "search") closePlayer(); loadSearch(q); }
 });
 document.getElementById("searchInput").addEventListener("keydown", function (e) {
   if (e.key === "Enter") document.getElementById("searchBtn").click();
 });
 
 document.getElementById("copyAllM").addEventListener("click", function () {
-  var rows = sortedRows("movies");
+  var rows = visibleRows("movies");
   if (!rows.length) return;
   copyText(rows.map(function (r) { return r.magnet; }).join("\n"), rows.length + " movie magnets copied");
 });
 document.getElementById("copyAllT").addEventListener("click", function () {
-  var rows = sortedRows("tv");
+  var rows = visibleRows("tv");
   if (!rows.length) return;
   copyText(rows.map(function (r) { return r.magnet; }).join("\n"), rows.length + " TV magnets copied");
 });
+document.getElementById("copyAllPlain").addEventListener("click", function () {
+  var rows = visibleRows(currentSec);
+  if (!rows.length) return;
+  copyText(rows.map(function (r) { return r.magnet; }).join("\n"), rows.length + " magnets copied");
+});
 
 document.getElementById("refreshBtn").addEventListener("click", function () {
-  closePlayer();
+  if (playerSection === "movies" || playerSection === "tv") closePlayer();
   loadMovies(state.movies.page);
   loadTV(state.tv.page);
 });
@@ -960,6 +1115,7 @@ document.getElementById("autoRefresh").addEventListener("change", function (e) {
 });
 
 /* ---------------- boot ---------------- */
+showSection("movies");
 loadMovies(1);
 loadTV(1);
 </script>
