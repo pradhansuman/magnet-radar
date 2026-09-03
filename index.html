@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MagnetRadar — Latest Torrents &amp; Magnets</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#11161d; --panel2:#161d26; --line:#1f2a36;
+    --text:#e6edf3; --muted:#8b98a5; --accent:#22d3a7; --accent2:#0ea5a3;
+    --danger:#f87171; --chip:#1a2530;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; min-height:100%;}
+  body{padding-bottom:60px;}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+
+  header{
+    position:sticky; top:0; z-index:10; background:rgba(11,15,20,.92);
+    backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+    padding:14px 20px 0;
+  }
+  .head-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap; max-width:1100px; margin:0 auto;}
+  .logo{font-size:20px; font-weight:800; letter-spacing:.3px; display:flex; align-items:center; gap:8px;}
+  .logo .magnet{filter:hue-rotate(40deg);}
+  .logo em{color:var(--accent); font-style:normal;}
+  .spacer{flex:1;}
+  .head-actions{display:flex; align-items:center; gap:10px; padding-bottom:12px;}
+  .switch{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); cursor:pointer; user-select:none;}
+  .switch input{accent-color:var(--accent); width:15px; height:15px; cursor:pointer;}
+  .btn{
+    border:1px solid var(--line); background:var(--panel2); color:var(--text);
+    padding:7px 13px; border-radius:8px; font-size:13px; cursor:pointer; font-weight:600;
+    transition:all .15s ease; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent); color:var(--accent);}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#04241c;}
+  .btn.primary:hover{background:#3ceebb; color:#04241c;}
+  .btn:disabled{opacity:.45; cursor:default;}
+  .btn:disabled:hover{border-color:var(--line); color:var(--text);}
+  .btn.primary:disabled:hover{color:#04241c;}
+
+  nav.tabs{display:flex; gap:4px; max-width:1100px; margin:0 auto;}
+  .tab{
+    padding:9px 16px; font-size:14px; font-weight:600; color:var(--muted);
+    border-bottom:2px solid transparent; cursor:pointer; user-select:none;
+  }
+  .tab:hover{color:var(--text);}
+  .tab.active{color:var(--accent); border-bottom-color:var(--accent);}
+
+  main{max-width:1100px; margin:0 auto; padding:18px 20px;}
+  .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;}
+  .toolbar select, .toolbar input[type=text]{
+    background:var(--panel); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:8px 10px; font-size:13px; outline:none;
+  }
+  .toolbar input[type=text]{flex:1; min-width:220px;}
+  .toolbar input[type=text]:focus{border-color:var(--accent);}
+  .toolbar label{font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:6px;}
+  .toolbar select{cursor:pointer;}
+
+  .meta-line{font-size:12.5px; color:var(--muted); margin-bottom:12px; display:flex; gap:14px; flex-wrap:wrap; align-items:center;}
+
+  .list{display:flex; flex-direction:column; gap:8px;}
+  .row{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; display:grid; grid-template-columns:1fr auto; gap:6px 16px;
+    transition:border-color .15s ease;
+  }
+  .row:hover{border-color:#2c3d4f;}
+  .row .title{font-size:14.5px; font-weight:600; line-height:1.35; word-break:break-word;}
+  .row .title a{color:var(--text);}
+  .row .title a:hover{color:var(--accent); text-decoration:none;}
+  .row .actions{display:flex; gap:8px; align-items:flex-start;}
+  .row .meta{grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:6px;}
+  .chip{
+    font-size:11.5px; padding:3px 8px; border-radius:20px; background:var(--chip);
+    color:var(--muted); white-space:nowrap;
+  }
+  .chip.seed{color:#4ade80; font-weight:700;}
+  .chip.leech{color:#fca5a5;}
+  .chip.q{color:#facc15; font-weight:700;}
+  .chip.imdb{color:#93c5fd;}
+
+  .btn.mini{padding:5px 10px; font-size:12px; border-radius:7px;}
+
+  .empty,.error,.loading{
+    border:1px dashed var(--line); border-radius:12px; padding:34px 20px;
+    text-align:center; color:var(--muted); font-size:14px; background:var(--panel);
+  }
+  .error{border-color:rgba(248,113,113,.4); color:#f3b4b4;}
+  .spinner{
+    display:inline-block; width:22px; height:22px; border:3px solid var(--line);
+    border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite;
+    margin-bottom:10px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .pager{display:flex; gap:10px; justify-content:center; align-items:center; margin-top:16px; font-size:13px; color:var(--muted);}
+
+  footer{
+    max-width:1100px; margin:26px auto 0; padding:0 20px; font-size:12px; color:var(--muted); line-height:1.6;
+  }
+  footer .warn{color:#e8c268;}
+
+  #toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--accent); color:#04241c; font-weight:700; font-size:13px;
+    padding:10px 18px; border-radius:10px; opacity:0; pointer-events:none;
+    transition:all .25s ease; z-index:50; max-width:80vw; text-align:center;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  .samples{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+  .samples button{
+    background:var(--chip); border:1px solid var(--line); color:var(--muted);
+    font-size:12px; border-radius:20px; padding:4px 12px; cursor:pointer;
+  }
+  .samples button:hover{color:var(--accent); border-color:var(--accent);}
+
+  @media (max-width:640px){
+    .row{grid-template-columns:1fr;}
+    .row .actions{justify-content:flex-start;}
+  }
+
+  /* ---- player modal ---- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(4,7,10,.78); z-index:40;
+    display:flex; align-items:center; justify-content:center; padding:18px;
+  }
+  .modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    width:min(920px, 96vw); max-height:94vh; overflow:auto; padding:16px 18px 18px;
+    box-shadow:0 18px 60px rgba(0,0,0,.55);
+  }
+  .modal-head{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
+  .modal-title{font-size:15px; font-weight:700; flex:1; word-break:break-word;}
+  .pl-status{font-size:12.5px; color:var(--accent); margin-bottom:8px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .pl-status.busy{color:#e8c268;}
+  .pl-note{font-size:12.5px; color:#e8c268; background:rgba(232,194,104,.08); border:1px solid rgba(232,194,104,.35); border-radius:8px; padding:8px 10px; margin-bottom:8px; line-height:1.5;}
+  .video-wrap{background:#000; border-radius:10px; min-height:220px; display:flex; align-items:center; justify-content:center; overflow:hidden; margin-bottom:10px;}
+  .video-wrap video{width:100%; max-height:62vh; outline:none; border-radius:10px; background:#000;}
+  .video-wrap .vplaceholder{color:#5b6a78; font-size:13px; padding:40px 16px; text-align:center; line-height:1.6;}
+  .pl-controls{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;}
+  .pl-controls label{font-size:12.5px; color:var(--muted); display:flex; align-items:center; gap:6px;}
+  .pl-controls select{background:var(--panel2); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 8px; font-size:12.5px; max-width:340px;}
+  .pl-files{display:flex; flex-direction:column; gap:6px; margin-bottom:10px;}
+  .frow{display:grid; grid-template-columns:auto 1fr auto 110px auto; gap:10px; align-items:center; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:7px 10px;}
+  .frow .fic{font-size:14px;}
+  .frow .fname{font-size:12.5px; word-break:break-all; line-height:1.35;}
+  .frow .fsz{font-size:11.5px; color:var(--muted); white-space:nowrap;}
+  .fbar{height:6px; background:#0d1319; border-radius:4px; overflow:hidden; border:1px solid var(--line);}
+  .fbar i{display:block; height:100%; background:var(--accent); width:0%; transition:width .4s ease;}
+  .pl-hint{font-size:11.5px; color:var(--muted); line-height:1.55;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <div class="logo"><span class="magnet">🧲</span> Magnet<em>Radar</em></div>
+    <div class="spacer"></div>
+    <div class="head-actions">
+      <label class="switch" title="Re-fetch the latest list every 60 seconds">
+        <input type="checkbox" id="autoRefresh"> Auto-refresh 60s
+      </label>
+      <button class="btn" id="copyAllBtn">⧉ Copy all magnets</button>
+      <button class="btn primary" id="refreshBtn">↻ Refresh</button>
+    </div>
+  </div>
+  <nav class="tabs">
+    <div class="tab active" data-tab="movies">🎬 Movies</div>
+    <div class="tab" data-tab="tv">📺 TV Shows</div>
+    <div class="tab" data-tab="search">🔍 Search All</div>
+  </nav>
+</header>
+
+<main>
+  <div class="toolbar" id="toolbarMovies">
+    <label>Quality
+      <select id="qualitySel">
+        <option value="all" selected>All</option>
+        <option value="2160p">2160p</option>
+        <option value="1080p">1080p</option>
+        <option value="720p">720p</option>
+      </select>
+    </label>
+    <label>Sort
+      <select id="sortSel">
+        <option value="new">Newest first</option>
+        <option value="seed">Most seeded</option>
+        <option value="size">Largest</option>
+      </select>
+    </label>
+    <label>Min seeds
+      <input type="number" id="minSeeds" min="0" value="0" style="width:64px; background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:8px 10px; font-size:13px; outline:none;">
+    </label>
+  </div>
+
+  <div class="toolbar" id="toolbarTV" style="display:none;">
+    <label>Sort
+      <select id="sortSelTV">
+        <option value="new">Newest first</option>
+        <option value="seed">Most seeded</option>
+        <option value="size">Largest</option>
+      </select>
+    </label>
+    <label>Min seeds
+      <input type="number" id="minSeedsTV" min="0" value="0" style="width:64px; background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:8px 10px; font-size:13px; outline:none;">
+    </label>
+  </div>
+
+  <div class="toolbar" id="toolbarSearch" style="display:none;">
+    <input type="text" id="searchInput" placeholder="Search torrents… e.g. ubuntu, debian, big buck bunny" autocomplete="off">
+    <button class="btn primary" id="searchBtn">Search</button>
+  </div>
+
+  <div class="meta-line" id="metaLine"></div>
+  <div class="list" id="list"></div>
+  <div class="pager" id="pager"></div>
+</main>
+
+<footer>
+  <div>Sources: <a href="https://yts.mx/api" target="_blank" rel="noopener">YTS API</a> (movies) · <a href="https://github.com/eztv-eu/EZTV" target="_blank" rel="noopener">EZTV API</a> (TV) · <a href="https://torrents-csv.com" target="_blank" rel="noopener">Torrents-CSV</a> (search). Everything runs in your browser; nothing is proxied or logged. The WebTorrent streaming engine is loaded on demand from jsDelivr.</div>
+  <div class="warn">⚠ Share only what's legal to share: public-domain and open-source releases, Creative-Commons media, and your own files. Respect the law where you live.</div>
+</footer>
+
+<div id="toast"></div>
+
+<div class="modal-overlay" id="playerModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="plTitle"></div>
+      <button class="btn mini" id="plClose">✕ Close</button>
+    </div>
+    <div class="pl-status busy" id="plStatus">Loading…</div>
+    <div class="pl-note" id="plNote" style="display:none;"></div>
+    <div class="video-wrap" id="videoWrap">
+      <div class="vplaceholder" id="vPlaceholder">Choose ▶ Play on any torrent to stream it here.<br>MP4/WebM play instantly; other formats need full download first.</div>
+    </div>
+    <div class="pl-controls" id="plControls" style="display:none;">
+      <label>File <select id="plFileSel"></select></label>
+      <button class="btn mini" id="plSaveTorrent" disabled>⤓ Save .torrent</button>
+    </div>
+    <div class="pl-files" id="plFiles"></div>
+    <div class="pl-hint">Streaming uses the WebTorrent engine (WebRTC peers + webseeds). If no peers appear, this swarm has no browser peers — use ⤓ Open to download with qBittorrent/WebTorrent Desktop instead. Only stream content you're allowed to access.</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------------- helpers ---------------- */
+
+var TRACKERS = [
+  "udp://tracker.opentrackr.org:1337/announce",
+  "udp://open.tracker.cl:1337/announce",
+  "udp://tracker.openbittorrent.com:6969/announce",
+  "udp://open.demonii.com:1337/announce",
+  "udp://exodus.desync.com:6969/announce",
+  "udp://tracker.torrent.eu.org:451/announce"
+];
+
+var WSS_TRACKERS = [
+  "wss://tracker.openwebtorrent.com",
+  "wss://tracker.webtorrent.dev",
+  "wss://tracker.files.fm:7073/announce"
+];
+
+function buildMagnet(hash, name) {
+  var m = "magnet:?xt=urn:btih:" + hash + "&dn=" + encodeURIComponent(name);
+  var all = TRACKERS.concat(WSS_TRACKERS);
+  for (var i = 0; i < all.length; i++) m += "&tr=" + encodeURIComponent(all[i]);
+  return m;
+}
+
+function fmtSize(bytes) {
+  var n = Number(bytes);
+  if (!isFinite(n) || n <= 0) return "—";
+  var units = ["B", "KB", "MB", "GB", "TB"];
+  var u = 0;
+  while (n >= 1024 && u < units.length - 1) { n /= 1024; u++; }
+  return (u === 0 ? n : n.toFixed(n >= 100 ? 0 : n >= 10 ? 1 : 2)) + " " + units[u];
+}
+
+function parseSizeStr(s) { // "1.85 GB" -> bytes (approx)
+  if (!s || typeof s !== "string") return 0;
+  var m = s.match(/([\d.]+)\s*(B|KB|MB|GB|TB)/i);
+  if (!m) return 0;
+  var v = parseFloat(m[1]);
+  var mult = { b: 1, kb: 1024, mb: 1024 * 1024, gb: 1024 * 1024 * 1024, tb: 1024 * 1024 * 1024 * 1024 };
+  return v * (mult[m[2].toLowerCase()] || 1);
+}
+
+function fmtAge(unix) {
+  var t = Number(unix);
+  if (!t) return null;
+  var s = Math.floor(Date.now() / 1000) - t;
+  if (s < 0) s = 0;
+  if (s < 60) return s + "s ago";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return Math.floor(s / 3600) + "h ago";
+  if (s < 86400 * 30) return Math.floor(s / 86400) + "d ago";
+  if (s < 86400 * 365) return Math.floor(s / (86400 * 30)) + "mo ago";
+  return Math.floor(s / (86400 * 365)) + "y ago";
+}
+
+function ytsDateToUnix(s) { // "2026-09-03 10:20:03" (UTC) -> unix
+  if (!s) return 0;
+  var d = new Date(s.replace(" ", "T") + "Z");
+  return isNaN(d.getTime()) ? 0 : Math.floor(d.getTime() / 1000);
+}
+
+var state = {
+  tab: "movies",
+  movies: { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
+  tv:     { page: 1, rows: null, pages: null, total: null, loading: false, error: null },
+  search: { q: "", rows: null, loading: false, error: null }
+};
+
+/* ---------------- fetching ---------------- */
+
+function fetchJSON(url, timeoutMs) {
+  var ctrl = new AbortController();
+  var timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 12000);
+  return fetch(url, { signal: ctrl.signal })
+    .then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    })
+    .finally(function () { clearTimeout(timer); });
+}
+
+var ytsHosts = ["https://yts.gg", "https://yts.mx", "https://movies-api.accel.li"];
+function ytsFetch(path) {
+  var idx = 0;
+  function attempt() {
+    if (idx >= ytsHosts.length) throw new Error("All YTS hosts unreachable (network/DNS or blocked).");
+    var host = ytsHosts[idx++];
+    return fetchJSON(host + path, 12000).catch(function (e) {
+      if (idx < ytsHosts.length) return attempt();
+      throw e;
+    });
+  }
+  return attempt();
+}
+
+/* ---------------- data loaders ---------------- */
+
+function loadMovies(page) {
+  var st = state.movies;
+  st.loading = true; st.error = null; render();
+  ytsFetch("/api/v2/list_movies.json?limit=50&page=" + page + "&sort_by=date_added&order_by=desc&with_cast=0")
+    .then(function (j) {
+      var data = j && j.data || {};
+      var movies = data.movies || [];
+      var rows = [];
+      for (var i = 0; i < movies.length; i++) {
+        var mv = movies[i];
+        var ts = mv.torrents || [];
+        for (var k = 0; k < ts.length; k++) {
+          var t = ts[k];
+          rows.push({
+            title: mv.title_long || mv.title,
+            href: mv.url || ("https://www.imdb.com/title/" + (mv.imdb_code || "")),
+            imdb: mv.imdb_code || null,
+            rating: mv.rating,
+            quality: t.quality,
+            type: t.type || "movie",
+            torrentUrl: t.url || null,
+            sizeStr: t.size,
+            sizeB: parseSizeStr(t.size),
+            seeds: t.seeds != null ? Number(t.seeds) : 0,
+            peers: t.peers != null ? Number(t.peers) : 0,
+            dateUnix: ytsDateToUnix(t.date_added),
+            magnet: buildMagnet(t.hash, mv.title_long || mv.title)
+          });
+        }
+      }
+      rows.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
+      st.rows = rows;
+      st.page = page;
+      st.total = data.movie_count || null;
+      st.pages = Math.min(100, Math.ceil((st.total || 5000) / 50) || null); // API caps page at 50
+      st.loading = false; render();
+    })
+    .catch(function (e) {
+      st.loading = false; st.error = e.message || String(e); render();
+    });
+}
+
+function loadTV(page) {
+  var st = state.tv;
+  st.loading = true; st.error = null; render();
+  fetchJSON("https://eztvx.to/api/get-torrents?limit=50&page=" + page, 14000)
+    .then(function (j) {
+      var ts = j && j.torrents || [];
+      var rows = ts.map(function (t) {
+        var sxx = (t.season && t.episode) ? "S" + String(t.season).padStart(2, "0") + "E" + String(t.episode).padStart(2, "0") : null;
+        return {
+          title: t.filename || t.title,
+          href: (t.imdb_id && Number(t.imdb_id) > 0) ? "https://www.imdb.com/title/tt" + t.imdb_id + "/" : null,
+          imdb: (t.imdb_id && Number(t.imdb_id) > 0) ? "tt" + t.imdb_id : null,
+          sxx: sxx,
+          quality: null,
+          sizeStr: fmtSize(t.size_bytes),
+          sizeB: Number(t.size_bytes) || 0,
+          seeds: Number(t.seeds) || 0,
+          peers: Number(t.peers) || 0,
+          dateUnix: Number(t.date_released_unix) || 0,
+          magnet: t.magnet_url || buildMagnet(t.hash, t.filename || t.title)
+        };
+      });
+      rows.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
+      st.rows = rows;
+      st.page = page;
+      st.total = j && j.torrents_count || null;
+      st.pages = null; // large; allow free navigation
+      st.loading = false; render();
+    })
+    .catch(function (e) {
+      st.loading = false; st.error = e.message || String(e); render();
+    });
+}
+
+function loadSearch(q) {
+  var st = state.search;
+  st.loading = true; st.error = null; render();
+  fetchJSON("https://torrents-csv.com/service/search?q=" + encodeURIComponent(q) + "&size=100", 14000)
+    .then(function (j) {
+      var ts = j && j.torrents || [];
+      var rows = ts.map(function (t) {
+        return {
+          title: t.name,
+          href: null,
+          quality: null,
+          sizeStr: fmtSize(t.size_bytes),
+          sizeB: Number(t.size_bytes) || 0,
+          seeds: Number(t.seeders) || 0,
+          peers: Number(t.leechers) || 0,
+          completed: Number(t.completed) || 0,
+          dateUnix: Number(t.created_unix) || 0,
+          magnet: buildMagnet(t.infohash, t.name)
+        };
+      });
+      st.rows = rows;
+      st.q = q;
+      st.loading = false; render();
+    })
+    .catch(function (e) {
+      st.loading = false; st.error = e.message || String(e); render();
+    });
+}
+
+/* ---------------- filtering & render ---------------- */
+
+function currentSortedRows() {
+  var tab = state.tab, rows;
+  var sortSel = tab === "movies" ? document.getElementById("sortSel").value
+              : tab === "tv" ? document.getElementById("sortSelTV").value
+              : "seed";
+  var minSeeds = tab === "movies" ? (Number(document.getElementById("minSeeds").value) || 0)
+               : tab === "tv" ? (Number(document.getElementById("minSeedsTV").value) || 0)
+               : 0;
+
+  if (tab === "movies") {
+    var q = document.getElementById("qualitySel").value;
+    rows = (state.movies.rows || []).filter(function (r) {
+      return (q === "all" || r.quality === q) && r.seeds >= minSeeds;
+    });
+  } else if (tab === "tv") {
+    rows = (state.tv.rows || []).filter(function (r) { return r.seeds >= minSeeds; });
+  } else {
+    rows = (state.search.rows || []);
+  }
+
+  rows = rows.slice();
+  if (sortSel === "seed") rows.sort(function (a, b) { return b.seeds - a.seeds || (b.dateUnix - a.dateUnix); });
+  else if (sortSel === "size") rows.sort(function (a, b) { return b.sizeB - a.sizeB; });
+  else rows.sort(function (a, b) { return b.dateUnix - a.dateUnix; });
+  return rows;
+}
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function render() {
+  var tab = state.tab;
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.classList.toggle("active", t.getAttribute("data-tab") === tab);
+  });
+  document.getElementById("toolbarMovies").style.display = tab === "movies" ? "flex" : "none";
+  document.getElementById("toolbarTV").style.display = tab === "tv" ? "flex" : "none";
+  document.getElementById("toolbarSearch").style.display = tab === "search" ? "flex" : "none";
+
+  var list = document.getElementById("list");
+  var meta = document.getElementById("metaLine");
+  var pager = document.getElementById("pager");
+  pager.innerHTML = "";
+  list.innerHTML = "";
+  document.getElementById("copyAllBtn").disabled = true;
+  document.getElementById("autoRefresh").disabled = (tab === "search");
+
+  var st = state[tab];
+
+  if (st.loading) {
+    list.appendChild(el("div", "loading"));
+    var lk = list.lastChild;
+    lk.appendChild(el("div"));
+    lk.firstChild.appendChild(document.createElement("span")).className = "spinner";
+    lk.firstChild.appendChild(el("div", "", "Fetching latest torrents…"));
+    meta.textContent = "";
+    return;
+  }
+  if (st.error) {
+    var ec = el("div", "error");
+    ec.appendChild(el("div", "", "⚠ " + st.error));
+    var rb = el("button", "btn", "Retry");
+    rb.style.marginTop = "12px";
+    rb.addEventListener("click", refreshCurrent);
+    ec.appendChild(rb);
+    list.appendChild(ec);
+    meta.textContent = "";
+    return;
+  }
+  if (!st.rows) {
+    // initial / search-empty state
+    var ec2 = el("div", "empty");
+    if (tab === "search") {
+      ec2.appendChild(el("div", "", "Search a query to find torrents across all categories."));
+      var samples = el("div", "samples");
+      ["ubuntu", "debian", "big buck bunny", "blender", "linux iso"].forEach(function (s) {
+        var b = el("button", "", s);
+        b.addEventListener("click", function () {
+          document.getElementById("searchInput").value = s;
+          loadSearch(s);
+        });
+        samples.appendChild(b);
+      });
+      ec2.appendChild(samples);
+    } else {
+      ec2.textContent = "Nothing loaded yet — press Refresh.";
+    }
+    list.appendChild(ec2);
+    meta.textContent = "";
+    return;
+  }
+
+  var rows = currentSortedRows();
+
+  // meta line
+  var bits = [];
+  if (tab === "movies") bits.push(rows.length + " torrent files · page " + state.movies.page + (state.movies.total ? " of ~" + state.movies.total + " movies" : "") + " · YTS");
+  if (tab === "tv") bits.push(rows.length + " releases · page " + state.tv.page + (state.tv.total ? " · " + Number(state.tv.total).toLocaleString() + " indexed" : "") + " · EZTV");
+  if (tab === "search") bits.push(rows.length + " results for “" + state.search.q + "” · Torrents-CSV");
+  meta.textContent = bits.join("");
+
+  if (rows.length === 0) {
+    list.appendChild(el("div", "empty", "No torrents match the current filters."));
+    renderPager();
+    return;
+  }
+
+  for (var i = 0; i < rows.length; i++) {
+    list.appendChild(renderRow(rows[i]));
+  }
+
+  document.getElementById("copyAllBtn").disabled = rows.length === 0;
+  renderPager();
+}
+
+function renderRow(r) {
+  var row = el("div", "row");
+
+  var title = el("div", "title");
+  if (r.href) {
+    var a = document.createElement("a");
+    a.href = r.href; a.target = "_blank"; a.rel = "noopener";
+    a.textContent = r.title;
+    title.appendChild(a);
+  } else {
+    title.textContent = r.title;
+  }
+  row.appendChild(title);
+
+  var actions = el("div", "actions");
+  var copyBtn = el("button", "btn mini", "⧉ Copy magnet");
+  copyBtn.addEventListener("click", function () { copyText(r.magnet, "Magnet copied to clipboard"); });
+  var playBtn = el("button", "btn mini", "▶ Play");
+  playBtn.title = "Stream in browser (WebTorrent)";
+  playBtn.addEventListener("click", function () { openPlayer(r); });
+  var openBtn = el("button", "btn mini primary", "⤓ Open");
+  openBtn.title = "Open with your default torrent client";
+  openBtn.addEventListener("click", function () {
+    var l = document.createElement("a");
+    l.href = r.magnet; document.body.appendChild(l); l.click(); l.remove();
+  });
+  actions.appendChild(copyBtn);
+  if (r.torrentUrl) {
+    var tlink = document.createElement("a");
+    tlink.className = "btn mini";
+    tlink.href = r.torrentUrl;
+    tlink.target = "_blank";
+    tlink.rel = "noopener";
+    tlink.setAttribute("download", "");
+    tlink.title = "Download the .torrent file from the source";
+    tlink.textContent = "⤓ .torrent";
+    actions.appendChild(tlink);
+  }
+  actions.appendChild(openBtn);
+  row.appendChild(actions);
+
+  var meta = el("div", "meta");
+  if (r.quality) meta.appendChild(el("span", "chip q", r.quality));
+  if (r.sxx) meta.appendChild(el("span", "chip q", r.sxx));
+  meta.appendChild(el("span", "chip", "💾 " + r.sizeStr));
+  meta.appendChild(el("span", "chip seed", "▲ " + r.seeds + " seeds"));
+  meta.appendChild(el("span", "chip leech", "▼ " + r.peers + " peers"));
+  var age = fmtAge(r.dateUnix);
+  if (age) meta.appendChild(el("span", "chip", "🕒 " + age));
+  if (r.rating) meta.appendChild(el("span", "chip", "★ " + r.rating));
+  if (r.completed) meta.appendChild(el("span", "chip", "✔ " + r.completed + " completed"));
+  if (r.imdb) meta.appendChild(el("span", "chip imdb", "IMDb " + r.imdb));
+  row.appendChild(meta);
+  return row;
+}
+
+function renderPager() {
+  var tab = state.tab;
+  if (tab === "search") return;
+  var st = state[tab];
+  var pager = document.getElementById("pager");
+  var prev = el("button", "btn", "← Prev");
+  prev.disabled = st.page <= 1;
+  prev.addEventListener("click", function () { gotoPage(st.page - 1); });
+  var next = el("button", "btn", "Next →");
+  if (st.pages && st.page >= st.pages) next.disabled = true;
+  next.addEventListener("click", function () { gotoPage(st.page + 1); });
+  pager.appendChild(prev);
+  pager.appendChild(el("span", "", "Page " + st.page));
+  pager.appendChild(next);
+}
+
+function gotoPage(p) {
+  if (p < 1) return;
+  if (state.tab === "movies") loadMovies(p);
+  else if (state.tab === "tv") loadTV(p);
+}
+
+function refreshCurrent() {
+  if (state.tab === "movies") loadMovies(state.movies.page);
+  else if (state.tab === "tv") loadTV(state.tv.page);
+  else if (state.tab === "search" && state.search.q) loadSearch(state.search.q);
+}
+
+/* ---------------- in-browser streaming player (WebTorrent) ---------------- */
+
+var WT_CDN = "https://cdn.jsdelivr.net/npm/webtorrent@1.9.7/webtorrent.min.js";
+var wtClient = null;
+var wtTorrent = null;
+var wtScriptPromise = null;
+var currentMedia = null;
+var currentFile = null;
+var ticker = null;
+var playerOpenSince = 0;
+
+function loadEngine() {
+  if (window.WebTorrent) return Promise.resolve(window.WebTorrent);
+  if (wtScriptPromise) return wtScriptPromise;
+  wtScriptPromise = new Promise(function (resolve, reject) {
+    var s = document.createElement("script");
+    s.src = WT_CDN;
+    s.onload = function () { resolve(window.WebTorrent); };
+    s.onerror = function () {
+      wtScriptPromise = null;
+      reject(new Error("Could not load the WebTorrent engine from jsDelivr (offline or blocked)."));
+    };
+    document.head.appendChild(s);
+  });
+  return wtScriptPromise;
+}
+
+function setPlStatus(text, busy) {
+  var s = document.getElementById("plStatus");
+  s.textContent = text;
+  s.classList.toggle("busy", !!busy);
+}
+function setPlNote(text) {
+  var n = document.getElementById("plNote");
+  if (!text) { n.style.display = "none"; return; }
+  n.textContent = text;
+  n.style.display = "block";
+}
+
+function isVideoFile(name) {
+  return /\.(mp4|m4v|webm|mkv|mov|avi|ts|ogv|flv|wmv|3gp|mpg|mpeg|m2ts)$/i.test(name);
+}
+function fileIcon(name) {
+  if (isVideoFile(name)) return "🎬";
+  if (/\.(mp3|flac|m4a|aac|opus|vorbis|wav|ogg)$/i.test(name)) return "🎵";
+  if (/\.(srt|ass|ssa|sub)$/i.test(name)) return "💬";
+  if (/\.(jpg|jpeg|png|gif|bmp|webp)$/i.test(name)) return "🖼️";
+  return "📦";
+}
+
+function pickVideoFile(files) {
+  var vids = files.filter(function (f) { return isVideoFile(f.name); });
+  if (!vids.length) return null;
+  vids.sort(function (a, b) { return b.length - a.length; });
+  var modern = vids.filter(function (f) { return /\.(mp4|m4v|webm)$/i.test(f.name); });
+  return (modern.length ? modern : vids)[0];
+}
+
+function openPlayer(row) {
+  document.getElementById("playerModal").style.display = "flex";
+  document.getElementById("plTitle").textContent = row.title;
+  document.getElementById("videoWrap").innerHTML = '<div class="vplaceholder">Connecting…</div>';
+  document.getElementById("plControls").style.display = "none";
+  document.getElementById("plFiles").innerHTML = "";
+  document.getElementById("plSaveTorrent").disabled = true;
+  setPlNote(null);
+  setPlStatus("Loading WebTorrent engine…", true);
+  playerOpenSince = Date.now();
+
+  loadEngine().then(function (WT) {
+    if (!WT.WEBRTC_SUPPORT) {
+      setPlStatus("WebRTC is not available in this browser.", false);
+      setPlNote("Browser streaming needs WebRTC. Use ⤓ Open with a desktop torrent client instead.");
+      return;
+    }
+    if (!wtClient) {
+      wtClient = new WT();
+      wtClient.on("error", function (e) {
+        if (document.getElementById("playerModal").style.display !== "none") {
+          setPlStatus("Engine error", false);
+          setPlNote(String(e && e.message || e));
+        }
+      });
+    }
+    if (wtTorrent) { try { wtClient.remove(wtTorrent); } catch (e) {} wtTorrent = null; }
+
+    setPlStatus("Connecting to swarm…", true);
+    wtTorrent = wtClient.add(row.magnet, { announce: WSS_TRACKERS }, function (t) {
+      t.on("error", function (e) { setPlStatus("Torrent error", false); setPlNote(String(e && e.message || e)); });
+      t.on("done", function () { renderPlayerFiles(t); });
+      buildFileSelector(t);
+      renderPlayerFiles(t);
+      document.getElementById("plSaveTorrent").disabled = false;
+      var f = pickVideoFile(t.files);
+      if (f) streamFile(f);
+      else setPlNote("No video file in this torrent — you can still save individual files below.");
+    });
+
+    if (ticker) clearInterval(ticker);
+    ticker = setInterval(tickPlayer, 500);
+  }).catch(function (e) {
+    setPlStatus("Engine failed to load", false);
+    setPlNote(e.message);
+  });
+}
+
+function buildFileSelector(t) {
+  var sel = document.getElementById("plFileSel");
+  var vids = t.files.filter(function (f) { return isVideoFile(f.name); });
+  if (!vids.length) { document.getElementById("plControls").style.display = "none"; return; }
+  sel.innerHTML = "";
+  vids.forEach(function (f) {
+    var o = document.createElement("option");
+    o.value = t.files.indexOf(f);
+    o.textContent = f.name + " (" + fmtSize(f.length) + ")";
+    sel.appendChild(o);
+  });
+  document.getElementById("plControls").style.display = "flex";
+  sel.onchange = function () {
+    var f = t.files[Number(sel.value)];
+    if (f) streamFile(f);
+  };
+}
+
+function streamFile(file) {
+  if (currentMedia && currentMedia.parentNode) currentMedia.parentNode.removeChild(currentMedia);
+  if (currentFile && currentFile.deselect) { try { currentFile.deselect(); } catch (e) {} }
+  currentFile = file;
+  currentMedia = null;
+  var wrap = document.getElementById("videoWrap");
+  wrap.innerHTML = "";
+  var ph = el("div", "vplaceholder", "Buffering " + file.name + "…");
+  wrap.appendChild(ph);
+  file.appendTo(wrap, { autoplay: true, controls: true, maxBlobLength: 4 * 1024 * 1024 * 1024 }, function (err, elem) {
+    if (err) {
+      wrap.innerHTML = "";
+      wrap.appendChild(el("div", "vplaceholder", "Can't play this file in the browser: " + (err.message || err) + ". Use ⤓ Open to download it with a desktop client."));
+      return;
+    }
+    if (ph.parentNode) ph.parentNode.removeChild(ph);
+    currentMedia = elem;
+  });
+}
+
+function renderPlayerFiles(t) {
+  var box = document.getElementById("plFiles");
+  box.innerHTML = "";
+  t.files.forEach(function (f) {
+    var row = el("div", "frow");
+    row.appendChild(el("span", "fic", fileIcon(f.name)));
+    row.appendChild(el("span", "fname", f.name));
+    row.appendChild(el("span", "fsz", fmtSize(f.length)));
+    var bar = el("div", "fbar");
+    var fill = document.createElement("i");
+    fill.style.width = Math.round((f.progress || 0) * 100) + "%";
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    var save = el("button", "btn mini fsave", f.done ? "⤓ Save" : "…%");
+    save.disabled = !f.done;
+    save.title = f.done ? "Save this file to your device" : "Available once this file has finished downloading";
+    save.addEventListener("click", function () {
+      f.getBlobURL(function (err2, url) {
+        if (err2) { toast("Save failed: " + (err2.message || err2)); return; }
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = f.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+        toast("Saved " + f.name);
+      });
+    });
+    row.appendChild(save);
+    row._file = f;
+    box.appendChild(row);
+  });
+}
+
+function tickPlayer() {
+  if (document.getElementById("playerModal").style.display === "none") return;
+  var elapsed = Math.floor((Date.now() - playerOpenSince) / 1000);
+  var t = wtTorrent;
+  if (!t || !t.files || !t.files.length) {
+    setPlStatus("Connecting to swarm… " + elapsed + "s · " + (t ? t.numPeers : 0) + " peers", true);
+    if (elapsed > 45) setPlNote("Still no metadata — this swarm likely has no WebTorrent (WebRTC) peers. Use ⤓ Open to download with qBittorrent/WebTorrent Desktop instead.");
+    return;
+  }
+  var pct = Math.round(t.progress * 100);
+  setPlStatus("▼ " + fmtSize(t.downloadSpeed) + "/s · " + pct + "% · " + t.numPeers + " peers · " + Math.round(t.downloaded / 1048576) + " MB down", false);
+  if (t.downloaded === 0 && t.numPeers === 0 && elapsed > 90) {
+    setPlNote("No peers are connecting. This torrent has no browser-reachable peers right now — use ⤓ Open (magnet) with a desktop client.");
+  }
+  var rows = document.querySelectorAll("#plFiles .frow");
+  for (var i = 0; i < rows.length; i++) {
+    var f = rows[i]._file;
+    if (!f) continue;
+    rows[i].querySelector(".fbar i").style.width = Math.round((f.progress || 0) * 100) + "%";
+    var btn = rows[i].querySelector(".fsave");
+    if (f.done && btn.disabled) { btn.disabled = false; btn.textContent = "⤓ Save"; }
+    else if (!f.done && !btn.disabled) { btn.disabled = true; btn.textContent = "…%"; }
+  }
+}
+
+function closePlayer() {
+  document.getElementById("playerModal").style.display = "none";
+  if (ticker) { clearInterval(ticker); ticker = null; }
+  if (currentMedia && currentMedia.parentNode) currentMedia.parentNode.removeChild(currentMedia);
+  currentMedia = null; currentFile = null;
+  document.getElementById("videoWrap").innerHTML = "";
+  if (wtClient && wtTorrent) { try { wtClient.remove(wtTorrent); } catch (e) {} }
+  wtTorrent = null;
+}
+
+document.getElementById("plClose").addEventListener("click", closePlayer);
+document.getElementById("playerModal").addEventListener("click", function (e) {
+  if (e.target === this) closePlayer();
+});
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape" && document.getElementById("playerModal").style.display !== "none") closePlayer();
+});
+
+document.getElementById("plSaveTorrent").addEventListener("click", function () {
+  if (!wtTorrent) return;
+  try {
+    var blob = new Blob([wtTorrent.torrentFile], { type: "application/x-bittorrent" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = (wtTorrent.name || "torrent") + ".torrent";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+    toast(".torrent file saved");
+  } catch (e) {
+    toast("Could not generate .torrent: " + (e.message || e));
+  }
+});
+
+/* ---------------- clipboard & toast ---------------- */
+
+function toast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(function () { t.classList.remove("show"); }, 1800);
+}
+
+function copyText(text, okMsg) {
+  function fallback() {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); toast(okMsg); }
+    catch (e) { toast("Copy failed — select manually"); }
+    ta.remove();
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { toast(okMsg); }, fallback);
+  } else fallback();
+}
+
+/* ---------------- events ---------------- */
+
+document.querySelectorAll(".tab").forEach(function (t) {
+  t.addEventListener("click", function () {
+    state.tab = t.getAttribute("data-tab");
+    var st = state[state.tab];
+    if (!st.rows && !st.loading && !st.error && state.tab !== "search") {
+      if (state.tab === "movies") loadMovies(state.movies.page);
+      else loadTV(state.tv.page);
+    } else {
+      render();
+    }
+  });
+});
+
+document.getElementById("refreshBtn").addEventListener("click", refreshCurrent);
+
+["sortSel", "sortSelTV", "qualitySel", "minSeeds", "minSeedsTV"].forEach(function (id) {
+  document.getElementById(id).addEventListener("change", render);
+});
+
+document.getElementById("searchBtn").addEventListener("click", function () {
+  var q = document.getElementById("searchInput").value.trim();
+  if (q) loadSearch(q);
+});
+document.getElementById("searchInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") document.getElementById("searchBtn").click();
+});
+
+document.getElementById("copyAllBtn").addEventListener("click", function () {
+  var rows = currentSortedRows();
+  if (!rows.length) return;
+  copyText(rows.map(function (r) { return r.magnet; }).join("\n"),
+           rows.length + " magnets copied");
+});
+
+var autoTimer = null;
+document.getElementById("autoRefresh").addEventListener("change", function (e) {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  if (e.target.checked) {
+    autoTimer = setInterval(function () {
+      if (!document.hidden && state.tab !== "search") refreshCurrent();
+    }, 60000);
+    toast("Auto-refresh on (every 60s)");
+  }
+});
+
+/* ---------------- boot ---------------- */
+loadMovies(1);
+</script>
+</body>
+</html>
