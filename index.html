@@ -801,7 +801,7 @@ function renderRow(r, sec) {
 }
 
 function renderPager(sec) {
-  var st = state[sec];
+  var st = (sec === "free") ? state.ia : state[sec];
   var pager = document.getElementById("secPager");
   var prev = el("button", "btn", "← Prev");
   prev.disabled = st.page <= 1;
