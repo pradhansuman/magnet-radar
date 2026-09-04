@@ -310,7 +310,15 @@
     <label>Language
       <select id="radioLangSel"></select>
     </label>
+    <label>Sort
+      <select id="radioSortSel">
+        <option value="pop" selected>Popularity</option>
+        <option value="name">Name A–Z</option>
+        <option value="bitrate">Bitrate</option>
+      </select>
+    </label>
     <input type="text" id="radioFilter" placeholder="Filter stations by name…" autocomplete="off">
+    <button class="btn" id="radioSearchBtn">Search</button>
     <span class="sec-sub">community-indexed public streams — some are offline or geo-blocked</span>
   </div>
 
@@ -681,7 +689,13 @@ function visibleRows(sec) {
     var rfl = rq ? rall.filter(function (r) { return r.title.toLowerCase().indexOf(rq) !== -1; }) : rall;
     var ralive = [], rdead = [];
     rfl.forEach(function (r) { (deadFails(r.url) >= 2 ? rdead : ralive).push(r); });
-    return ralive.concat(rdead).slice(0, 300);
+    var rsort = document.getElementById("radioSortSel").value;
+    function sortRadio(list) {
+      if (rsort === "name") list.sort(function (a, b) { return a.title.localeCompare(b.title); });
+      else if (rsort === "bitrate") list.sort(function (a, b) { return (b.bitrate || 0) - (a.bitrate || 0); });
+      return list;
+    }
+    return sortRadio(ralive).concat(sortRadio(rdead)).slice(0, 300);
   }
   if (def.type === "movies") {
     var q = document.getElementById("qualitySelM").value;
@@ -1914,6 +1928,15 @@ document.getElementById("radioLangSel").addEventListener("change", function (e) 
   if (playerSection === "radio") closePlayer();
   state.radio.lang = e.target.value;
   loadRadio(state.radio.tag);
+});
+document.getElementById("radioSortSel").addEventListener("change", function () {
+  if (playerSection === "radio") closePlayer();
+  renderCurrent();
+});
+document.getElementById("radioSearchBtn").addEventListener("click", function () {
+  state.radio.q = document.getElementById("radioFilter").value.trim();
+  if (playerSection === "radio") closePlayer();
+  renderCurrent();
 });
 var radioFilterTimer = null;
 document.getElementById("radioFilter").addEventListener("input", function (e) {
