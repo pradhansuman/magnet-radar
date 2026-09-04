@@ -666,14 +666,22 @@ function visibleRows(sec) {
   if (def.type === "livetv") {
     var q = (state.live.q || "").toLowerCase();
     var all = (state.live.rows || []);
-    var fl = q ? all.filter(function (r) { return r.title.toLowerCase().indexOf(q) !== -1; }) : all;
-    return fl.slice(0, 300);
+    var fl = all.filter(function (r) {
+      if (state.live.country && r.cc !== state.live.country) return false;
+      if (q && r.title.toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+    var alive = [], dead = [];
+    fl.forEach(function (r) { (deadFails(r.url) >= 2 ? dead : alive).push(r); });
+    return alive.concat(dead).slice(0, 300);
   }
   if (def.type === "radio") {
     var rq = (state.radio.q || "").toLowerCase();
     var rall = (state.radio.rows || []);
     var rfl = rq ? rall.filter(function (r) { return r.title.toLowerCase().indexOf(rq) !== -1; }) : rall;
-    return rfl.slice(0, 300);
+    var ralive = [], rdead = [];
+    rfl.forEach(function (r) { (deadFails(r.url) >= 2 ? rdead : ralive).push(r); });
+    return ralive.concat(rdead).slice(0, 300);
   }
   if (def.type === "movies") {
     var q = document.getElementById("qualitySelM").value;
@@ -1148,6 +1156,90 @@ function radioTagLabel(tag) {
   return tag;
 }
 
+var liveCountryNames = null;
+function ensureLiveCountryNames() {
+  if (liveCountryNames) return Promise.resolve(liveCountryNames);
+  return fetchJSON("https://iptv-org.github.io/api/countries.json", 15000).then(function (list) {
+    liveCountryNames = {};
+    (list || []).forEach(function (c) { liveCountryNames[c.code] = (c.flag || "") + " " + c.name; });
+    return liveCountryNames;
+  }).catch(function () { liveCountryNames = {}; return liveCountryNames; });
+}
+function refreshLiveCountrySel(rows) {
+  var sel = document.getElementById("liveCountrySel");
+  if (!sel) return;
+  var counts = {};
+  rows.forEach(function (r) { if (r.cc) counts[r.cc] = (counts[r.cc] || 0) + 1; });
+  var codes = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+  var cur = state.live.country;
+  sel.innerHTML = "";
+  var all = document.createElement("option");
+  all.value = ""; all.textContent = "All countries (" + rows.length + ")";
+  sel.appendChild(all);
+  codes.forEach(function (c) {
+    var o = document.createElement("option");
+    o.value = c;
+    o.textContent = (liveCountryNames && liveCountryNames[c] ? liveCountryNames[c] : c) + " (" + counts[c] + ")";
+    if (c === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+  sel.style.display = codes.length ? "" : "none";
+  if (!liveCountryNames) {
+    ensureLiveCountryNames().then(function (names) {
+      for (var i = 0; i < sel.options.length; i++) {
+        var c = sel.options[i].value;
+        if (c && names[c]) sel.options[i].textContent = names[c] + " (" + counts[c] + ")";
+      }
+    });
+  }
+}
+function ensureRadioCountrySel() {
+  var sel = document.getElementById("radioCountrySel");
+  if (!sel || sel.options.length > 1) return;
+  rbFetch("/json/countries").then(function (list) {
+    list.sort(function (a, b) { return (b.stationcount || 0) - (a.stationcount || 0); });
+    var cur = state.radio.country;
+    sel.innerHTML = "";
+    var all = document.createElement("option");
+    all.value = ""; all.textContent = "All countries";
+    sel.appendChild(all);
+    list.forEach(function (c) {
+      if (!c.stationcount) return;
+      var o = document.createElement("option");
+      o.value = c.iso_3166_1;
+      o.textContent = c.name + " (" + c.stationcount + ")";
+      if (c.iso_3166_1 === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+  }).catch(function () {});
+}
+function ensureRadioLangSel() {
+  var sel = document.getElementById("radioLangSel");
+  if (!sel || sel.options.length > 1) return;
+  rbFetch("/json/languages").then(function (list) {
+    list.sort(function (a, b) { return (b.stationcount || 0) - (a.stationcount || 0); });
+    var cur = state.radio.lang;
+    sel.innerHTML = "";
+    var all = document.createElement("option");
+    all.value = ""; all.textContent = "All languages";
+    sel.appendChild(all);
+    list.slice(0, 120).forEach(function (l) {
+      if (!l.stationcount) return;
+      var o = document.createElement("option");
+      o.value = l.name; o.textContent = l.name + " (" + l.stationcount + ")";
+      if (l.name === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+  }).catch(function () {});
+}
+
+/* ---- dead-stream memory ---- */
+
+function loadDead() { try { return JSON.parse(localStorage.getItem("mr_dead") || "{}"); } catch (e) { return {}; } }
+function markDead(url) { if (!url) return; var d = loadDead(); d[url] = (d[url] || 0) + 1; try { localStorage.setItem("mr_dead", JSON.stringify(d)); } catch (e) {} }
+function clearDead(url) { if (!url) return; var d = loadDead(); if (d[url]) { delete d[url]; try { localStorage.setItem("mr_dead", JSON.stringify(d)); } catch (e) {} } }
+function deadFails(url) { return loadDead()[url] || 0; }
+
 function loadLive(cat) {
   var st = state.live;
   if (st.cat === cat && st.rows) { renderCurrent(); return; }
@@ -1186,6 +1278,8 @@ function loadRadio(tag) {
   if (st.tag === tag && st.rows) { renderCurrent(); return; }
   st.tag = tag; st.loading = true; st.error = null; st.rows = null; st.q = "";
   document.getElementById("radioFilter").value = "";
+  ensureRadioCountrySel();
+  ensureRadioLangSel();
   if (currentSec === "radio") renderCurrent();
   var path = "/json/stations/search?limit=500&order=clickcount&reverse=true&hidebroken=true";
   if (tag !== "top") path += "&tag=" + encodeURIComponent(tag);
